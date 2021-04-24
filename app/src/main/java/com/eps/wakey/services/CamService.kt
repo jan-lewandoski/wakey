@@ -4,10 +4,7 @@ import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
-import android.graphics.ImageFormat
-import android.graphics.PixelFormat
-import android.graphics.SurfaceTexture
+import android.graphics.*
 import android.hardware.camera2.*
 import android.media.ImageReader
 import android.os.Build
@@ -18,9 +15,9 @@ import android.view.*
 import androidx.core.app.NotificationCompat
 import com.eps.wakey.R
 import com.eps.wakey.activities.MainActivity
-import kotlin.Exception
-import kotlin.collections.ArrayList
+import com.eps.wakey.utils.YuvToRgbConverter
 import kotlin.math.absoluteValue
+
 
 /**
  * Copyright (c) 2019 by Roman Sisik. All rights reserved.
@@ -78,13 +75,13 @@ class CamService: Service() {
 
     private val imageListener = ImageReader.OnImageAvailableListener { reader ->
         val image = reader?.acquireLatestImage()
-
-        Log.d("IMAGE", "Got image: " + image?.width + " x " + image?.height)
-
-        // Process image here..ideally async so that you don't block the callback
-        // ..
-
-
+        if (image != null) {
+            val bmp = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
+            val yuvToRgbConverter = YuvToRgbConverter(this)
+            yuvToRgbConverter.yuvToRgb(image, bmp)
+            val isDark = isDark(bmp)
+            Log.d("IMAGE", "Is dark? -> $isDark")
+        }
         image?.close()
     }
 
@@ -217,7 +214,7 @@ class CamService: Service() {
             // First find something with similar aspect
             {
                 val aspect = if (it.width < it.height) it.width.toFloat() / it.height.toFloat()
-                else it.height.toFloat()/it.width.toFloat()
+                else it.height.toFloat() / it.width.toFloat()
                 (aspect - texViewAspect).absoluteValue
             },
             // Also try to get similar resolution
@@ -243,7 +240,11 @@ class CamService: Service() {
             }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_NONE)
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_NONE
+            )
             channel.lightColor = Color.BLUE
             channel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
             val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -289,12 +290,16 @@ class CamService: Service() {
                 addTarget(imageReader!!.surface)
 
                 // Set some additional parameters for the request
-                set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
+                set(
+                    CaptureRequest.CONTROL_AF_MODE,
+                    CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE
+                )
                 set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH)
             }
 
             // Prepare CameraCaptureSession
-            cameraDevice!!.createCaptureSession(targetSurfaces,
+            cameraDevice!!.createCaptureSession(
+                targetSurfaces,
                 object : CameraCaptureSession.StateCallback() {
 
                     override fun onConfigured(cameraCaptureSession: CameraCaptureSession) {
@@ -307,7 +312,11 @@ class CamService: Service() {
                         try {
                             // Now we can start capturing
                             captureRequest = requestBuilder!!.build()
-                            captureSession!!.setRepeatingRequest(captureRequest!!, captureCallback, null)
+                            captureSession!!.setRepeatingRequest(
+                                captureRequest!!,
+                                captureCallback,
+                                null
+                            )
 
                         } catch (e: CameraAccessException) {
                             Log.e(TAG, "createCaptureSession", e)
@@ -341,7 +350,26 @@ class CamService: Service() {
         }
     }
 
-
+    fun isDark(bitmap: Bitmap): Boolean {
+        var dark = false
+        val darkThreshold = bitmap.width * bitmap.height * 0.45f
+        var darkPixels = 0
+        val pixels = IntArray(bitmap.width * bitmap.height)
+        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+        for (pixel in pixels) {
+            val r = Color.red(pixel)
+            val g = Color.green(pixel)
+            val b = Color.blue(pixel)
+            val luminance = 0.299 * r + 0.0f + 0.587 * g + 0.0f + 0.114 * b + 0.0f
+            if (luminance < 150) {
+                darkPixels++
+            }
+        }
+        if (darkPixels >= darkThreshold) {
+            dark = true
+        }
+        return dark
+    }
     companion object {
 
         val TAG = "CamService"
