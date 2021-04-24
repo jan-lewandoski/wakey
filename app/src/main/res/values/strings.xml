@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Wakey</string>
+    <string name="err_no_cam_permission">No permission to use the camera</string>
+</resources>
