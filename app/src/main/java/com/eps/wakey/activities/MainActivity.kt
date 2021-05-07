@@ -19,6 +19,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 import android.provider.Settings
 import android.util.Log
 import com.eps.wakey.services.CamService
+import org.opencv.android.OpenCVLoader
 
 
 class MainActivity : AppCompatActivity() {

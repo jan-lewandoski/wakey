@@ -16,6 +16,13 @@ import androidx.core.app.NotificationCompat
 import com.eps.wakey.R
 import com.eps.wakey.activities.MainActivity
 import com.eps.wakey.utils.YuvToRgbConverter
+import org.opencv.android.OpenCVLoader
+import org.opencv.android.Utils
+import org.opencv.core.Core
+import org.opencv.core.Mat
+import org.opencv.imgcodecs.Imgcodecs.imread
+import org.opencv.imgproc.Imgproc
+import org.opencv.imgproc.Imgproc.*
 import kotlin.math.absoluteValue
 
 
@@ -76,6 +83,7 @@ class CamService: Service() {
     private val imageListener = ImageReader.OnImageAvailableListener { reader ->
         val image = reader?.acquireLatestImage()
         if (image != null) {
+
             val bmp = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
             val yuvToRgbConverter = YuvToRgbConverter(this)
             yuvToRgbConverter.yuvToRgb(image, bmp)
@@ -120,12 +128,14 @@ class CamService: Service() {
 
     override fun onCreate() {
         super.onCreate()
+        if (!OpenCVLoader.initDebug()) {
+            Log.d("error", "opencv not initialized")
+        }
         startForeground()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-
         stopCamera()
 
         if (rootView != null)
@@ -192,7 +202,15 @@ class CamService: Service() {
             }
         }
 
-        previewSize = chooseSupportedSize(camId!!, width, height)
+
+
+
+        //CHANGED HERE
+
+
+
+
+        previewSize = chooseSupportedSize(camId!!, 320, 200)
 
         cameraManager!!.openCamera(camId, stateCallback, null)
     }
@@ -270,6 +288,7 @@ class CamService: Service() {
             // Prepare CaptureRequest that can be used with CameraCaptureSession
             val requestBuilder = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW).apply {
 
+
                 if (shouldShowPreview) {
                     val texture = textureView!!.surfaceTexture!!
                     texture.setDefaultBufferSize(previewSize!!.width, previewSize!!.height)
@@ -280,6 +299,7 @@ class CamService: Service() {
                 }
 
                 // Configure target surface for background processing (ImageReader)
+
                 imageReader = ImageReader.newInstance(
                     previewSize!!.getWidth(), previewSize!!.getHeight(),
                     ImageFormat.YUV_420_888, 2
@@ -351,24 +371,33 @@ class CamService: Service() {
     }
 
     fun isDark(bitmap: Bitmap): Boolean {
-        var dark = false
-        val darkThreshold = bitmap.width * bitmap.height * 0.45f
-        var darkPixels = 0
-        val pixels = IntArray(bitmap.width * bitmap.height)
-        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
-        for (pixel in pixels) {
-            val r = Color.red(pixel)
-            val g = Color.green(pixel)
-            val b = Color.blue(pixel)
-            val luminance = 0.299 * r + 0.0f + 0.587 * g + 0.0f + 0.114 * b + 0.0f
-            if (luminance < 150) {
-                darkPixels++
-            }
+//        val darkThreshold = bitmap.width * bitmap.height * 0.45f * 0.01
+//        var darkPixels = 0
+//        val pixels = IntArray(bitmap.width * bitmap.height)
+//        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+//        pixels.forEachIndexed {i, pixel ->
+//            if (i % 100 == 1){
+//                val r = Color.red(pixel)
+//                val g = Color.green(pixel)
+//                val b = Color.blue(pixel)
+//                val luminance = 0.299 * r + 0.0f + 0.587 * g + 0.0f + 0.114 * b + 0.0f
+//                if (luminance < 150) {
+//                    darkPixels++
+//                }
+//            }
+//        }
+//        if (darkPixels >= darkThreshold) {
+//            dark = true
+//        }
+        var mat = Mat()
+//        val gray = Mat()
+        Utils.bitmapToMat(bitmap, mat)
+        cvtColor(mat, mat, COLOR_BGR2GRAY)
+        blur(mat, mat, org.opencv.core.Size(5.0,5.0))
+        if (Core.mean(mat).`val`[0] < 50) {
+            return true
         }
-        if (darkPixels >= darkThreshold) {
-            dark = true
-        }
-        return dark
+        return false
     }
     companion object {
 
