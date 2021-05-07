@@ -6,7 +6,9 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.*
 import android.hardware.camera2.*
+import android.media.AudioManager
 import android.media.ImageReader
+import android.media.ToneGenerator
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
@@ -20,9 +22,12 @@ import org.opencv.android.OpenCVLoader
 import org.opencv.android.Utils
 import org.opencv.core.Core
 import org.opencv.core.Mat
-import org.opencv.imgcodecs.Imgcodecs.imread
-import org.opencv.imgproc.Imgproc
+import org.opencv.core.MatOfRect
 import org.opencv.imgproc.Imgproc.*
+import org.opencv.objdetect.CascadeClassifier
+import java.io.File
+import java.io.FileOutputStream
+import java.io.InputStream
 import kotlin.math.absoluteValue
 
 
@@ -46,6 +51,13 @@ class CamService: Service() {
 
     // You can start service in 2 modes - 1.) with preview 2.) without preview (only bg processing)
     private var shouldShowPreview = true
+
+    //ToneGenerator to generate beep sound when eyes closed
+    private var toneGen: ToneGenerator? = null
+    private var isPlaying = false
+
+    //trained eyes classifier
+    private var eyeCascade: CascadeClassifier? = null
 
 
     private val captureCallback = object : CameraCaptureSession.CaptureCallback() {
@@ -87,8 +99,16 @@ class CamService: Service() {
             val bmp = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
             val yuvToRgbConverter = YuvToRgbConverter(this)
             yuvToRgbConverter.yuvToRgb(image, bmp)
-            val isDark = isDark(bmp)
-            Log.d("IMAGE", "Is dark? -> $isDark")
+            //val isDark = isDark(bmp)
+            //Log.d("IMAGE", "Is dark? -> $isDark")
+            if (eyesOpen(bmp) && !isPlaying) {
+                toneGen?.startTone(ToneGenerator.TONE_DTMF_0)
+                isPlaying = true
+            }
+            else {
+                toneGen?.stopTone()
+                isPlaying = false
+            }
         }
         image?.close()
     }
@@ -130,6 +150,36 @@ class CamService: Service() {
         super.onCreate()
         if (!OpenCVLoader.initDebug()) {
             Log.d("error", "opencv not initialized")
+        }
+
+        toneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+
+        try {
+            val `is`: InputStream = resources.openRawResource(R.raw.eye_glasses)
+            val cascadeDir = getDir("cascade", Context.MODE_PRIVATE)
+            val mCascadeFile = File(cascadeDir, "cascade.xml")
+            val os = FileOutputStream(mCascadeFile)
+
+
+            val buffer = ByteArray(4096)
+            var bytesRead: Int = 0
+
+            while (`is`.read(buffer).also({ bytesRead = it }) != -1) {
+                os.write(buffer, 0, bytesRead)
+                Log.d(TAG, "buffer: $buffer")
+            }
+            `is`.close()
+            os.close()
+// Load the cascade classifier
+// Load the cascade classifier
+            eyeCascade = CascadeClassifier(mCascadeFile.getAbsolutePath())
+            eyeCascade?.load(mCascadeFile.getAbsolutePath())
+            if (eyeCascade!!.empty()) {
+                Log.e(TAG, "Failed to load cascade classifier")
+                eyeCascade = null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
         startForeground()
     }
@@ -203,51 +253,44 @@ class CamService: Service() {
         }
 
 
-
-
-        //CHANGED HERE
-
-
-
-
-        previewSize = chooseSupportedSize(camId!!, 320, 200)
+        previewSize = chooseSupportedSize(camId!!, width, height)
 
         cameraManager!!.openCamera(camId, stateCallback, null)
     }
 
     private fun chooseSupportedSize(camId: String, textureViewWidth: Int, textureViewHeight: Int): Size {
 
-        val manager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
+//        val manager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
+//
+//        // Get all supported sizes for TextureView
+//        val characteristics = manager.getCameraCharacteristics(camId)
+//        val map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+//        val supportedSizes = map?.getOutputSizes(SurfaceTexture::class.java)
+//
+//        // We want to find something near the size of our TextureView
+//        val texViewArea = textureViewWidth * textureViewHeight
+//        val texViewAspect = textureViewWidth.toFloat()/textureViewHeight.toFloat()
+//
+//        val nearestToFurthestSz = supportedSizes?.sortedWith(compareBy(
+//            // First find something with similar aspect
+//            {
+//                val aspect = if (it.width < it.height) it.width.toFloat() / it.height.toFloat()
+//                else it.height.toFloat() / it.width.toFloat()
+//                (aspect - texViewAspect).absoluteValue
+//            },
+//            // Also try to get similar resolution
+//            {
+//                (texViewArea - it.width * it.height).absoluteValue
+//            }
+//        ))
+//
+//
+//        if (nearestToFurthestSz != null) {
+//            if (nearestToFurthestSz.isNotEmpty())
+//                return nearestToFurthestSz[0]
+//        }
 
-        // Get all supported sizes for TextureView
-        val characteristics = manager.getCameraCharacteristics(camId)
-        val map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
-        val supportedSizes = map?.getOutputSizes(SurfaceTexture::class.java)
-
-        // We want to find something near the size of our TextureView
-        val texViewArea = textureViewWidth * textureViewHeight
-        val texViewAspect = textureViewWidth.toFloat()/textureViewHeight.toFloat()
-
-        val nearestToFurthestSz = supportedSizes?.sortedWith(compareBy(
-            // First find something with similar aspect
-            {
-                val aspect = if (it.width < it.height) it.width.toFloat() / it.height.toFloat()
-                else it.height.toFloat() / it.width.toFloat()
-                (aspect - texViewAspect).absoluteValue
-            },
-            // Also try to get similar resolution
-            {
-                (texViewArea - it.width * it.height).absoluteValue
-            }
-        ))
-
-
-        if (nearestToFurthestSz != null) {
-            if (nearestToFurthestSz.isNotEmpty())
-                return nearestToFurthestSz[0]
-        }
-
-        return Size(320, 200)
+        return Size(100, 100)
     }
 
     private fun startForeground() {
@@ -389,7 +432,7 @@ class CamService: Service() {
 //        if (darkPixels >= darkThreshold) {
 //            dark = true
 //        }
-        var mat = Mat()
+        val mat = Mat()
 //        val gray = Mat()
         Utils.bitmapToMat(bitmap, mat)
         cvtColor(mat, mat, COLOR_BGR2GRAY)
@@ -399,6 +442,22 @@ class CamService: Service() {
         }
         return false
     }
+
+    fun eyesOpen(bitmap: Bitmap): Boolean {
+        val mat = Mat()
+        val gray = Mat()
+        Utils.bitmapToMat(bitmap, mat)
+        cvtColor(mat, gray, COLOR_BGR2GRAY)
+        val matOfRect = MatOfRect()
+        eyeCascade?.detectMultiScale(gray, matOfRect)
+        var i = 0
+        for (eye in matOfRect.toArray()){
+            i++
+            Log.d("tag", "eye: " + eye.x + " " + eye.y + " " + eye.width + " " + eye.height)
+        }
+        return i >= 1
+    }
+
     companion object {
 
         val TAG = "CamService"
