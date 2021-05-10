@@ -7,6 +7,7 @@ import android.content.Intent
 import android.graphics.*
 import android.hardware.camera2.*
 import android.media.AudioManager
+import android.media.Image
 import android.media.ImageReader
 import android.media.ToneGenerator
 import android.os.Build
@@ -18,13 +19,8 @@ import androidx.core.app.NotificationCompat
 import com.eps.wakey.R
 import com.eps.wakey.activities.MainActivity
 import com.eps.wakey.utils.YuvToRgbConverter
-import org.opencv.android.OpenCVLoader
-import org.opencv.android.Utils
-import org.opencv.core.Core
-import org.opencv.core.Mat
-import org.opencv.core.MatOfRect
-import org.opencv.imgproc.Imgproc.*
-import org.opencv.objdetect.CascadeClassifier
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.face.*
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -57,8 +53,7 @@ class CamService: Service() {
     private var isPlaying = false
 
     //trained eyes classifier
-    private var eyeCascade: CascadeClassifier? = null
-
+    var detector: FaceDetector? = null
 
     private val captureCallback = object : CameraCaptureSession.CaptureCallback() {
 
@@ -96,21 +91,14 @@ class CamService: Service() {
         val image = reader?.acquireLatestImage()
         if (image != null) {
 
-            val bmp = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
-            val yuvToRgbConverter = YuvToRgbConverter(this)
-            yuvToRgbConverter.yuvToRgb(image, bmp)
+//            val bmp = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
+//            val yuvToRgbConverter = YuvToRgbConverter(this)
+//            yuvToRgbConverter.yuvToRgb(image, bmp)
             //val isDark = isDark(bmp)
             //Log.d("IMAGE", "Is dark? -> $isDark")
-            if (eyesOpen(bmp) && !isPlaying) {
-                toneGen?.startTone(ToneGenerator.TONE_DTMF_0)
-                isPlaying = true
-            }
-            else {
-                toneGen?.stopTone()
-                isPlaying = false
-            }
+            eyesOpen(image)
         }
-        image?.close()
+        //image?.close()
     }
 
     private val stateCallback = object : CameraDevice.StateCallback() {
@@ -123,11 +111,15 @@ class CamService: Service() {
         override fun onDisconnected(currentCameraDevice: CameraDevice) {
             currentCameraDevice.close()
             cameraDevice = null
+            toneGen?.stopTone()
+
         }
 
         override fun onError(currentCameraDevice: CameraDevice, error: Int) {
             currentCameraDevice.close()
             cameraDevice = null
+            toneGen?.stopTone()
+
         }
     }
 
@@ -148,46 +140,26 @@ class CamService: Service() {
 
     override fun onCreate() {
         super.onCreate()
-        if (!OpenCVLoader.initDebug()) {
-            Log.d("error", "opencv not initialized")
-        }
 
         toneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+        // High-accuracy landmark detection and face classification
+        val highAccuracyOpts = FaceDetectorOptions.Builder()
+            .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
+            .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
+            .build()
 
-        try {
-            val `is`: InputStream = resources.openRawResource(R.raw.eye_glasses)
-            val cascadeDir = getDir("cascade", Context.MODE_PRIVATE)
-            val mCascadeFile = File(cascadeDir, "cascade.xml")
-            val os = FileOutputStream(mCascadeFile)
-
-
-            val buffer = ByteArray(4096)
-            var bytesRead: Int = 0
-
-            while (`is`.read(buffer).also({ bytesRead = it }) != -1) {
-                os.write(buffer, 0, bytesRead)
-                Log.d(TAG, "buffer: $buffer")
-            }
-            `is`.close()
-            os.close()
-// Load the cascade classifier
-// Load the cascade classifier
-            eyeCascade = CascadeClassifier(mCascadeFile.getAbsolutePath())
-            eyeCascade?.load(mCascadeFile.getAbsolutePath())
-            if (eyeCascade!!.empty()) {
-                Log.e(TAG, "Failed to load cascade classifier")
-                eyeCascade = null
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+// Real-time contour detection
+        val realTimeOpts = FaceDetectorOptions.Builder()
+            .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
+            .build()
+        detector = FaceDetection.getClient(realTimeOpts)
         startForeground()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         stopCamera()
-
+        toneGen?.stopTone()
         if (rootView != null)
             wm?.removeView(rootView)
 
@@ -290,7 +262,7 @@ class CamService: Service() {
 //                return nearestToFurthestSz[0]
 //        }
 
-        return Size(100, 100)
+        return Size(300, 480)
     }
 
     private fun startForeground() {
@@ -345,7 +317,7 @@ class CamService: Service() {
 
                 imageReader = ImageReader.newInstance(
                     previewSize!!.getWidth(), previewSize!!.getHeight(),
-                    ImageFormat.YUV_420_888, 2
+                    ImageFormat.YUV_420_888, 20
                 )
                 imageReader!!.setOnImageAvailableListener(imageListener, null)
 
@@ -413,49 +385,56 @@ class CamService: Service() {
         }
     }
 
-    fun isDark(bitmap: Bitmap): Boolean {
-//        val darkThreshold = bitmap.width * bitmap.height * 0.45f * 0.01
-//        var darkPixels = 0
-//        val pixels = IntArray(bitmap.width * bitmap.height)
-//        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
-//        pixels.forEachIndexed {i, pixel ->
-//            if (i % 100 == 1){
-//                val r = Color.red(pixel)
-//                val g = Color.green(pixel)
-//                val b = Color.blue(pixel)
-//                val luminance = 0.299 * r + 0.0f + 0.587 * g + 0.0f + 0.114 * b + 0.0f
-//                if (luminance < 150) {
-//                    darkPixels++
-//                }
-//            }
-//        }
-//        if (darkPixels >= darkThreshold) {
-//            dark = true
-//        }
-        val mat = Mat()
-//        val gray = Mat()
-        Utils.bitmapToMat(bitmap, mat)
-        cvtColor(mat, mat, COLOR_BGR2GRAY)
-        blur(mat, mat, org.opencv.core.Size(5.0,5.0))
-        if (Core.mean(mat).`val`[0] < 50) {
-            return true
-        }
-        return false
-    }
 
-    fun eyesOpen(bitmap: Bitmap): Boolean {
-        val mat = Mat()
-        val gray = Mat()
-        Utils.bitmapToMat(bitmap, mat)
-        cvtColor(mat, gray, COLOR_BGR2GRAY)
-        val matOfRect = MatOfRect()
-        eyeCascade?.detectMultiScale(gray, matOfRect)
-        var i = 0
-        for (eye in matOfRect.toArray()){
-            i++
-            Log.d("tag", "eye: " + eye.x + " " + eye.y + " " + eye.width + " " + eye.height)
-        }
-        return i >= 1
+    fun eyesOpen(bitmap: Image): Boolean {
+        val image = InputImage.fromMediaImage(bitmap, 270)
+        var out = false
+        val result = detector?.process(image)
+            ?.addOnSuccessListener { faces ->
+                Log.d("log", "success")
+                if (faces.size == 0){
+                    toneGen?.stopTone()
+                }
+                for (face in faces) {
+                    Log.d("log", "face")
+                    // If classification was enabled:
+                    var prob = 1
+                    if (face.leftEyeOpenProbability != null) {
+                        val leftEyeOpenProb = face.leftEyeOpenProbability
+                        Log.d("FACES", "left eye: " + leftEyeOpenProb)
+                        if (leftEyeOpenProb < 0.3){
+                            prob = 0
+                        }
+
+                    }
+                    else{
+                        Log.d("FACES", "NOPE")
+                    }
+                    if (face.rightEyeOpenProbability != null) {
+                        val rightEyeOpenProb = face.rightEyeOpenProbability
+                        Log.d("FACES", "right eye: " + rightEyeOpenProb)
+                        if (rightEyeOpenProb < 0.3){
+                            prob = 0
+                        }
+                    }
+                    if (prob < 0.1){
+                        toneGen?.startTone(ToneGenerator.TONE_DTMF_0)
+                    }
+                    else{
+                        toneGen?.stopTone()
+                    }
+                }
+            }
+            ?.addOnFailureListener { e ->
+                Log.d("log", "failed" + e)
+            }
+            ?.addOnCompleteListener {tasks ->
+                Log.d("log", "here")
+                bitmap.close()
+            }
+
+
+        return out
     }
 
     companion object {
