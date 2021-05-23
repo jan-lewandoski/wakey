@@ -21,7 +21,7 @@ class TimeToDrive : Fragment() {
         val viewPager = activity?.findViewById<ViewPager2>(R.id.viewPager)
 
         view.buttonFinish.setOnClickListener {
-            findNavController().navigate(R.id.action_viewPagerFragment_to_homeFragment)
+            findNavController().navigate(R.id.action_viewPagerFragment_to_homeActivity)
             onboardingFinished()
         }
         return view

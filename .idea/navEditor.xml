@@ -8,13 +8,13 @@
             <LayoutPositions>
               <option name="myPositions">
                 <map>
-                  <entry key="homeFragment">
+                  <entry key="homeActivity">
                     <value>
                       <LayoutPositions>
                         <option name="myPosition">
                           <Point>
-                            <option name="x" value="308" />
-                            <option name="y" value="347" />
+                            <option name="x" value="296" />
+                            <option name="y" value="327" />
                           </Point>
                         </option>
                       </LayoutPositions>
@@ -31,12 +31,29 @@
                         </option>
                         <option name="myPositions">
                           <map>
+                            <entry key="action_splashFragment3_to_homeActivity">
+                              <value>
+                                <LayoutPositions />
+                              </value>
+                            </entry>
                             <entry key="action_splashFragment3_to_viewPagerFragment">
                               <value>
                                 <LayoutPositions />
                               </value>
                             </entry>
                           </map>
+                        </option>
+                      </LayoutPositions>
+                    </value>
+                  </entry>
+                  <entry key="testFragment">
+                    <value>
+                      <LayoutPositions>
+                        <option name="myPosition">
+                          <Point>
+                            <option name="x" value="-289" />
+                            <option name="y" value="-56" />
+                          </Point>
                         </option>
                       </LayoutPositions>
                     </value>
@@ -52,7 +69,7 @@
                         </option>
                         <option name="myPositions">
                           <map>
-                            <entry key="action_viewPagerFragment_to_homeFragment">
+                            <entry key="action_viewPagerFragment_to_homeActivity">
                               <value>
                                 <LayoutPositions />
                               </value>

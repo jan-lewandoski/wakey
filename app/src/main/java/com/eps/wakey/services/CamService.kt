@@ -32,12 +32,10 @@ import kotlin.math.absoluteValue
  */
 class CamService: Service() {
 
-    // UI
     private var wm: WindowManager? = null
     private var rootView: View? = null
     private var textureView: TextureView? = null
 
-    // Camera2-related stuff
     private var cameraManager: CameraManager? = null
     private var previewSize: Size? = null
     private var cameraDevice: CameraDevice? = null
@@ -45,14 +43,11 @@ class CamService: Service() {
     private var captureSession: CameraCaptureSession? = null
     private var imageReader: ImageReader? = null
 
-    // You can start service in 2 modes - 1.) with preview 2.) without preview (only bg processing)
     private var shouldShowPreview = true
 
-    //ToneGenerator to generate beep sound when eyes closed
     private var toneGen: ToneGenerator? = null
     private var isPlaying = false
 
-    //trained eyes classifier
     var detector: FaceDetector? = null
 
     private val captureCallback = object : CameraCaptureSession.CaptureCallback() {
@@ -90,15 +85,8 @@ class CamService: Service() {
     private val imageListener = ImageReader.OnImageAvailableListener { reader ->
         val image = reader?.acquireLatestImage()
         if (image != null) {
-
-//            val bmp = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
-//            val yuvToRgbConverter = YuvToRgbConverter(this)
-//            yuvToRgbConverter.yuvToRgb(image, bmp)
-            //val isDark = isDark(bmp)
-            //Log.d("IMAGE", "Is dark? -> $isDark")
             eyesOpen(image)
         }
-        //image?.close()
     }
 
     private val stateCallback = object : CameraDevice.StateCallback() {
@@ -231,37 +219,6 @@ class CamService: Service() {
     }
 
     private fun chooseSupportedSize(camId: String, textureViewWidth: Int, textureViewHeight: Int): Size {
-
-//        val manager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
-//
-//        // Get all supported sizes for TextureView
-//        val characteristics = manager.getCameraCharacteristics(camId)
-//        val map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
-//        val supportedSizes = map?.getOutputSizes(SurfaceTexture::class.java)
-//
-//        // We want to find something near the size of our TextureView
-//        val texViewArea = textureViewWidth * textureViewHeight
-//        val texViewAspect = textureViewWidth.toFloat()/textureViewHeight.toFloat()
-//
-//        val nearestToFurthestSz = supportedSizes?.sortedWith(compareBy(
-//            // First find something with similar aspect
-//            {
-//                val aspect = if (it.width < it.height) it.width.toFloat() / it.height.toFloat()
-//                else it.height.toFloat() / it.width.toFloat()
-//                (aspect - texViewAspect).absoluteValue
-//            },
-//            // Also try to get similar resolution
-//            {
-//                (texViewArea - it.width * it.height).absoluteValue
-//            }
-//        ))
-//
-//
-//        if (nearestToFurthestSz != null) {
-//            if (nearestToFurthestSz.isNotEmpty())
-//                return nearestToFurthestSz[0]
-//        }
-
         return Size(300, 480)
     }
 
@@ -297,10 +254,8 @@ class CamService: Service() {
 
     private fun createCaptureSession() {
         try {
-            // Prepare surfaces we want to use in capture session
             val targetSurfaces = ArrayList<Surface>()
 
-            // Prepare CaptureRequest that can be used with CameraCaptureSession
             val requestBuilder = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW).apply {
 
 
@@ -313,8 +268,6 @@ class CamService: Service() {
                     addTarget(previewSurface)
                 }
 
-                // Configure target surface for background processing (ImageReader)
-
                 imageReader = ImageReader.newInstance(
                     previewSize!!.getWidth(), previewSize!!.getHeight(),
                     ImageFormat.YUV_420_888, 20
@@ -324,7 +277,6 @@ class CamService: Service() {
                 targetSurfaces.add(imageReader!!.surface)
                 addTarget(imageReader!!.surface)
 
-                // Set some additional parameters for the request
                 set(
                     CaptureRequest.CONTROL_AF_MODE,
                     CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE
@@ -332,20 +284,17 @@ class CamService: Service() {
                 set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH)
             }
 
-            // Prepare CameraCaptureSession
             cameraDevice!!.createCaptureSession(
                 targetSurfaces,
                 object : CameraCaptureSession.StateCallback() {
 
                     override fun onConfigured(cameraCaptureSession: CameraCaptureSession) {
-                        // The camera is already closed
                         if (null == cameraDevice) {
                             return
                         }
 
                         captureSession = cameraCaptureSession
                         try {
-                            // Now we can start capturing
                             captureRequest = requestBuilder!!.build()
                             captureSession!!.setRepeatingRequest(
                                 captureRequest!!,
@@ -397,7 +346,6 @@ class CamService: Service() {
                 }
                 for (face in faces) {
                     Log.d("log", "face")
-                    // If classification was enabled:
                     var prob = 1
                     if (face.leftEyeOpenProbability != null) {
                         val leftEyeOpenProb = face.leftEyeOpenProbability
