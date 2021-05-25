@@ -62,6 +62,11 @@ class HomeActivity : AppCompatActivity() {
         unregisterReceiver(receiver)
     }
 
+    override fun onDestroy() {
+        stopService(Intent(this, CamService::class.java))
+        super.onDestroy()
+    }
+
     override fun onBackPressed() {
         moveTaskToBack(true)
     }
