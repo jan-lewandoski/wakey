@@ -131,9 +131,8 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun flipButtonVisibility(running: Boolean) {
-
-        butStart?.visibility =  if (running) View.GONE else View.VISIBLE
-        butStop?.visibility =  if (running) View.VISIBLE else View.GONE
+        butStartContainer?.visibility =  if (running) View.GONE else View.VISIBLE
+        butStopContainer?.visibility =  if (running) View.VISIBLE else View.GONE
     }
 
 
