@@ -62,6 +62,10 @@ class HomeActivity : AppCompatActivity() {
         unregisterReceiver(receiver)
     }
 
+    override fun onBackPressed() {
+        moveTaskToBack(true)
+    }
+
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
@@ -69,7 +73,7 @@ class HomeActivity : AppCompatActivity() {
             CODE_PERM_CAMERA -> {
                 if (grantResults?.firstOrNull() != PackageManager.PERMISSION_GRANTED) {
                     Toast.makeText(this, getString(R.string.err_no_cam_permission), Toast.LENGTH_LONG).show()
-                    finish()
+                    moveTaskToBack(true)
                 }
             }
         }
@@ -101,7 +105,7 @@ class HomeActivity : AppCompatActivity() {
             if (!isServiceRunning(this, CamService::class.java)) {
                if (switchPreview.isChecked)  notifyService(CamService.ACTION_START_WITH_PREVIEW)
                else notifyService(CamService.ACTION_START)
-                finish()
+                moveTaskToBack(true)
             }
 
             moveTaskToBack(true)
