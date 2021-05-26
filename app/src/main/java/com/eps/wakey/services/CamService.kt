@@ -18,13 +18,8 @@ import android.view.*
 import androidx.core.app.NotificationCompat
 import com.eps.wakey.R
 import com.eps.wakey.activities.MainActivity
-import com.eps.wakey.utils.YuvToRgbConverter
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.*
-import java.io.File
-import java.io.FileOutputStream
-import java.io.InputStream
-import kotlin.math.absoluteValue
 
 
 /**

@@ -18,11 +18,13 @@ import com.eps.wakey.utils.isServiceRunning
 import android.provider.Settings
 import android.util.Log
 import android.widget.CompoundButton
+import com.eps.wakey.fragments.ActionBottomFragment
+import com.eps.wakey.fragments.ItemClickListener
 import com.eps.wakey.services.CamService
 import kotlinx.android.synthetic.main.activity_home.*
 
 
-class HomeActivity : AppCompatActivity() {
+class HomeActivity : AppCompatActivity(), ItemClickListener {
 
     private val receiver = object: BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
@@ -44,6 +46,12 @@ class HomeActivity : AppCompatActivity() {
         if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, arrayOf(permission), CODE_PERM_CAMERA)
         }
+
+        floatingButSettings.setOnClickListener {
+            openSettings()
+        }
+
+
     }
 
     override fun onResume() {
@@ -86,18 +94,13 @@ class HomeActivity : AppCompatActivity() {
 
     private fun initView() {
 
-        val sharedPref = applicationContext.getSharedPreferences("home", MODE_PRIVATE)
-        switchPreview.isChecked = sharedPref.getBoolean("WITH_PREVIEW", false)
-
-        switchPreview.setOnCheckedChangeListener { compoundButton: CompoundButton, b: Boolean ->
-            val editor = sharedPref.edit()
-            editor.putBoolean("WITH_PREVIEW", switchPreview.isChecked)
-            editor.apply()
-        }
+        val sharedPref = applicationContext.getSharedPreferences("SETTINGS", MODE_PRIVATE)
+        SHOW_CAMERA_PREVIEW = sharedPref.getBoolean("WITH_PREVIEW", false)
+        EYE_TRACKING_SENSITIVITY = sharedPref.getFloat("EYE_TRACKING_SENSITIVITY", 0.3F)
 
         butStart.setOnClickListener {
 
-            if (switchPreview.isChecked) {
+            if (SHOW_CAMERA_PREVIEW) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
 
                     // Don't have permission to draw over other apps yet - ask user to give permission
@@ -105,10 +108,10 @@ class HomeActivity : AppCompatActivity() {
                     startActivityForResult(settingsIntent, CODE_PERM_SYSTEM_ALERT_WINDOW)
                     return@setOnClickListener
                 }
-                            }
+            }
 
             if (!isServiceRunning(this, CamService::class.java)) {
-               if (switchPreview.isChecked)  notifyService(CamService.ACTION_START_WITH_PREVIEW)
+               if (SHOW_CAMERA_PREVIEW)  notifyService(CamService.ACTION_START_WITH_PREVIEW)
                else notifyService(CamService.ACTION_START)
                 moveTaskToBack(true)
             }
@@ -135,12 +138,20 @@ class HomeActivity : AppCompatActivity() {
         butStopContainer?.visibility =  if (running) View.VISIBLE else View.GONE
     }
 
-
-    companion object {
-
-        val CODE_PERM_SYSTEM_ALERT_WINDOW = 6111
-        val CODE_PERM_CAMERA = 6112
+    private fun openSettings() {
+        val bottomDialog = ActionBottomFragment.newInstance()
+        bottomDialog.show(supportFragmentManager, ActionBottomFragment.TAG)
     }
 
 
+    companion object {
+        val CODE_PERM_SYSTEM_ALERT_WINDOW = 6111
+        val CODE_PERM_CAMERA = 6112
+        var SHOW_CAMERA_PREVIEW = false
+        var EYE_TRACKING_SENSITIVITY = 0.3F
+    }
+
+    override fun onItemClick(value: Any?) {
+        Log.d("SETTINGS", "Action clicked")
+    }
 }
