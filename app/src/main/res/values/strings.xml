@@ -1,6 +1,43 @@
-<resources>
-    <string name="app_name">Wakey</string>
-    <string name="err_no_cam_permission">No permission to use the camera</string>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name" translatable="false">Wakey!</string>
+    <string name="err_no_cam_permission" translatable="false">No permission to use the camera</string>
     <string name="show_preview">Show camera preview</string>
     <string name="sensitivity_slider">Eye tracking sensitivity</string>
+
+    <!-- General -->
+    <string name="general_next">Next</string>
+    <string name="general_back">Back</string>
+    <string name="general_done">Done</string>
+    <string name="general_start">Start</string>
+    <string name="general_stop">Stop</string>
+
+
+    <!-- Welcome -->
+    <string name="welcome_title">Welcome</string>
+    <string name="welcome_description">Hi! 👋 \n My name is Foxy and I\'m going to show you how Wakey works. \n\n  Click the button or swipe left to start!</string>
+    <string name="welcome_fox_alt" translatable="false">Fox dancing</string>
+    <string name="welcome_action">Get started</string>
+
+    <!-- About -->
+    <string name="about_title">How does it work?</string>
+    <string name="about_description"> I\'ll be taking care of your safety by tracking your eyes and face. \n\n  If I detect that you\'re falling asleep, I will warn you with a loud alert 🔊 </string>
+    <string name="about_fox_alt" translatable="false">Fox dancing</string>
+
+    <!--  Eye tracking  -->
+    <string name="eye_tracking_title">Eye Tracking</string>
+    <string name="eye_tracking_description">Eye tracking works fully in the background. \n\n Depending on the option you choose, I can either show you the camera preview or hide it. \n\n Just click \"Start\" and hit the road! 🚙 </string>
+    <string name="eye_tracking_fox_alt" translatable="false">Fox blinking</string>
+
+    <!-- Permissions  -->
+    <string name="permissions_title">Permissions</string>
+    <string name="permissions_description">In order to do my best, I will need your permission to use the camera. \n\n Don\'t worry - all I see stays on the device 📱 </string>
+    <string name="permissions_fox_alt" translatable="false">Fox with phone</string>
+
+    <!-- Time to drive  -->
+    <string name="time_to_drive_title">Time to Drive!</string>
+    <string name="time_to_drive_description">We\'re ready to go! \n\n  Remember - your safety is our concern!  </string>
+    <string name="time_to_drive_fox_alt" translatable="false">Fox scooter</string>
+    <string name="time_to_drive_action">Go to app</string>
+
+
 </resources>

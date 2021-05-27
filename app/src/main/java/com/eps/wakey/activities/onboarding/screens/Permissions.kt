@@ -8,7 +8,7 @@ import android.view.ViewGroup
 import com.eps.wakey.R
 
 
-class Settings : Fragment() {
+class Permissions : Fragment() {
 
 
     override fun onCreateView(
@@ -16,7 +16,7 @@ class Settings : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_settings, container, false)
+        return inflater.inflate(R.layout.fragment_permissions, container, false)
     }
 
 }
