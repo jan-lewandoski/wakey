@@ -18,6 +18,7 @@ import android.view.*
 import androidx.core.app.NotificationCompat
 import com.eps.wakey.R
 import com.eps.wakey.activities.MainActivity
+import com.eps.wakey.activities.home.HomeActivity
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.*
 
@@ -348,7 +349,6 @@ class CamService: Service() {
                         if (leftEyeOpenProb < 0.3){
                             prob = 0
                         }
-
                     }
                     else{
                         Log.d("FACES", "NOPE")

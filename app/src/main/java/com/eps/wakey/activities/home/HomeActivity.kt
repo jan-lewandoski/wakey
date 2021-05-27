@@ -16,15 +16,12 @@ import androidx.core.content.ContextCompat
 import com.eps.wakey.R
 import com.eps.wakey.utils.isServiceRunning
 import android.provider.Settings
-import android.util.Log
-import android.widget.CompoundButton
 import com.eps.wakey.fragments.ActionBottomFragment
-import com.eps.wakey.fragments.ItemClickListener
 import com.eps.wakey.services.CamService
 import kotlinx.android.synthetic.main.activity_home.*
 
 
-class HomeActivity : AppCompatActivity(), ItemClickListener {
+class HomeActivity : AppCompatActivity() {
 
     private val receiver = object: BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
@@ -93,12 +90,11 @@ class HomeActivity : AppCompatActivity(), ItemClickListener {
     }
 
     private fun initView() {
-
-        val sharedPref = applicationContext.getSharedPreferences("SETTINGS", MODE_PRIVATE)
-        SHOW_CAMERA_PREVIEW = sharedPref.getBoolean("WITH_PREVIEW", false)
-        EYE_TRACKING_SENSITIVITY = sharedPref.getFloat("EYE_TRACKING_SENSITIVITY", 0.3F)
-
         butStart.setOnClickListener {
+            val sharedPref = applicationContext.getSharedPreferences("SETTINGS", MODE_PRIVATE)
+
+            SHOW_CAMERA_PREVIEW = sharedPref.getBoolean("WITH_PREVIEW", false)
+            EYE_TRACKING_SENSITIVITY = sharedPref.getFloat("EYE_TRACKING_SENSITIVITY", 0.3F)
 
             if (SHOW_CAMERA_PREVIEW) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
@@ -115,10 +111,8 @@ class HomeActivity : AppCompatActivity(), ItemClickListener {
                else notifyService(CamService.ACTION_START)
                 moveTaskToBack(true)
             }
-
             moveTaskToBack(true)
         }
-
 
         butStop.setOnClickListener {
             stopService(Intent(this, CamService::class.java))
@@ -126,10 +120,8 @@ class HomeActivity : AppCompatActivity(), ItemClickListener {
     }
 
     private fun notifyService(action: String) {
-
         val intent = Intent(this, CamService::class.java)
         intent.action = action
-        Log.d("SERVICE_NOTIFIED", "Should start service")
         startService(intent)
     }
 
@@ -149,9 +141,5 @@ class HomeActivity : AppCompatActivity(), ItemClickListener {
         val CODE_PERM_CAMERA = 6112
         var SHOW_CAMERA_PREVIEW = false
         var EYE_TRACKING_SENSITIVITY = 0.3F
-    }
-
-    override fun onItemClick(value: Any?) {
-        Log.d("SETTINGS", "Action clicked")
     }
 }
