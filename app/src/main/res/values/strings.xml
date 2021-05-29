@@ -11,7 +11,6 @@
     <string name="general_start">Start</string>
     <string name="general_stop">Stop</string>
 
-
     <!-- Welcome -->
     <string name="welcome_title">Welcome</string>
     <string name="welcome_description">Hi! 👋 \n My name is Foxy and I\'m going to show you how Wakey works. \n\n  Click the button or swipe left to start!</string>
@@ -25,19 +24,22 @@
 
     <!--  Eye tracking  -->
     <string name="eye_tracking_title">Eye Tracking</string>
-    <string name="eye_tracking_description">Eye tracking works fully in the background. \n\n Depending on the option you choose, I can either show you the camera preview or hide it. \n\n Just click \"Start\" and hit the road! 🚙 </string>
+    <string name="eye_tracking_description">Eye tracking works fully in the background. \n\n Depending on the option you choose, I can either show you the camera preview or hide it, in order not to interrupt you. \n\n Just click \"Start\" and hit the road! 🚙 </string>
     <string name="eye_tracking_fox_alt" translatable="false">Fox blinking</string>
+    <string name="eye_tracking_low">Low</string>
+    <string name="eye_tracking_medium">Medium</string>
+    <string name="eye_tracking_high">High</string>
 
     <!-- Permissions  -->
     <string name="permissions_title">Permissions</string>
-    <string name="permissions_description">In order to do my best, I will need your permission to use the camera. \n\n Don\'t worry - all I see stays on the device 📱 </string>
+    <string name="permissions_description">"In order to do my best, I will need your permission to use the camera. \n\n Don't worry - all I see stays on the device 📱 "</string>
     <string name="permissions_fox_alt" translatable="false">Fox with phone</string>
 
     <!-- Time to drive  -->
     <string name="time_to_drive_title">Time to Drive!</string>
     <string name="time_to_drive_description">We\'re ready to go! \n\n  Remember - your safety is our concern!  </string>
     <string name="time_to_drive_fox_alt" translatable="false">Fox scooter</string>
-    <string name="time_to_drive_action">Go to app</string>
+    <string name="time_to_drive_action">Done</string>
 
 
 </resources>

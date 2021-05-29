@@ -39,6 +39,17 @@ class ActionBottomDialogFragment: BottomSheetDialogFragment() {
             editor.apply()
         })
 
+        val slider: Slider = view.sensitivitySlider
+        slider.setLabelFormatter { value ->
+            if (value >= 0.0f && value < 0.3f)
+                resources.getString(R.string.eye_tracking_low)
+            else if (value >= 0.3f && value < 0.7f) {
+                resources.getString(R.string.eye_tracking_medium)
+            } else {
+                resources.getString(R.string.eye_tracking_high)
+            }
+        }
+
         return view
     }
 }

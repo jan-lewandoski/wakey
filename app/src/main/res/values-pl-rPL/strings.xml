@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="show_preview">Pokaż podgląd z aparatu</string>
+    <string name="sensitivity_slider">Czułość śledzenia oczu</string>
+    <string name="general_next">Dalej</string>
+    <string name="general_back">Wstecz</string>
+    <string name="general_done">Gotowe</string>
+    <string name="general_start">Start</string>
+    <string name="general_stop">Stop</string>
+    <string name="welcome_title">Witaj</string>
+    <string name="welcome_description">Cześć! 👋 \n Nazywam się Foxy i pokażę Ci jak działa aplikacja Wakey! \n\n Naciśnij przycisk lub przesuń palcem w lewo aby zacząć!</string>
+    <string name="welcome_action">Zaczynajmy</string>
+    <string name="about_title">Jak to działa?</string>
+    <string name="about_description">Zadbam o Twoje bezpieczeństwo obserwując Twoje oczy i twarz. \n\n Gdy wykryję, żę zasypiasz, ostrzegę Cię wydając głośny dźwięk 🔊</string>
+    <string name="eye_tracking_title">Obserwacja oczu</string>
+    <string name="eye_tracking_description">Śledzenie oczu będzie działać w tle. \n\n W zależności, którą opcję wybierzesz, mogę pokazać Ci podgląd z aparatu lub go ukryć, aby Ci nie przeszkadzał. \n\n Po prostu kliknij \"Start\" i ruszaj w drogę! 🚙</string>
+    <string name="eye_tracking_low">Niska</string>
+    <string name="eye_tracking_medium">Średnia</string>
+    <string name="eye_tracking_high">Wysoka</string>
+    <string name="permissions_title">Uprawnienia</string>
+    <string name="permissions_description">Aby zagwarantować Ci maksimum bezpieczeństwa, będę potrzebował uprawnień do używania aparatu. \n\n Nie martw się - wszystko co widzę zostaje na Twoim urządzeniu 📱</string>
+    <string name="time_to_drive_title">Ruszajmy!</string>
+    <string name="time_to_drive_description">Wszystko gotowe! \n\n Pamiętaj - Twoje bezpieczeństwo jest naszym priorytetem!</string>
+    <string name="time_to_drive_action">Gotowe</string>
+</resources>
