@@ -34,4 +34,13 @@
         android:name="com.eps.wakey.activities.home.HomeActivity"
         android:label="activity_home"
         tools:layout="@layout/activity_home" />
+    <fragment
+        android:id="@+id/overlayFragment"
+        android:name="com.eps.wakey.OverlayFragment"
+        android:label="fragment_overlay"
+        tools:layout="@layout/fragment_overlay" >
+        <action
+            android:id="@+id/action_overlayFragment_to_homeActivity"
+            app:destination="@id/homeActivity" />
+    </fragment>
 </navigation>

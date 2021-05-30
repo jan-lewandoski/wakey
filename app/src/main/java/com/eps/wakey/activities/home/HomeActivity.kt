@@ -16,6 +16,7 @@ import androidx.core.content.ContextCompat
 import com.eps.wakey.R
 import com.eps.wakey.utils.isServiceRunning
 import android.provider.Settings
+import android.util.Log
 import com.eps.wakey.fragments.ActionBottomFragment
 import com.eps.wakey.services.CamService
 import kotlinx.android.synthetic.main.activity_home.*
@@ -25,6 +26,7 @@ class HomeActivity : AppCompatActivity() {
 
     private val receiver = object: BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
+            Log.d("OVERLAY", "Received")
             when (p1?.action) {
                 CamService.ACTION_STOPPED -> flipButtonVisibility(false)
             }
@@ -47,8 +49,6 @@ class HomeActivity : AppCompatActivity() {
         floatingButSettings.setOnClickListener {
             openSettings()
         }
-
-
     }
 
     override fun onResume() {
@@ -134,7 +134,6 @@ class HomeActivity : AppCompatActivity() {
         val bottomDialog = ActionBottomFragment.newInstance()
         bottomDialog.show(supportFragmentManager, ActionBottomFragment.TAG)
     }
-
 
     companion object {
         val CODE_PERM_SYSTEM_ALERT_WINDOW = 6111

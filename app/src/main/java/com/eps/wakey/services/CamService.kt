@@ -4,7 +4,10 @@ import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
 import android.content.Intent
-import android.graphics.*
+import android.graphics.Color
+import android.graphics.ImageFormat
+import android.graphics.PixelFormat
+import android.graphics.SurfaceTexture
 import android.hardware.camera2.*
 import android.media.AudioManager
 import android.media.Image
@@ -18,9 +21,10 @@ import android.view.*
 import androidx.core.app.NotificationCompat
 import com.eps.wakey.R
 import com.eps.wakey.activities.MainActivity
-import com.eps.wakey.activities.home.HomeActivity
 import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.face.*
+import com.google.mlkit.vision.face.FaceDetection
+import com.google.mlkit.vision.face.FaceDetector
+import com.google.mlkit.vision.face.FaceDetectorOptions
 
 
 /**
@@ -75,6 +79,8 @@ class CamService: Service() {
         }
 
         override fun onSurfaceTextureUpdated(texture: SurfaceTexture) {}
+
+
     }
 
 
@@ -132,7 +138,7 @@ class CamService: Service() {
             .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
             .build()
 
-// Real-time contour detection
+        // Real-time contour detection
         val realTimeOpts = FaceDetectorOptions.Builder()
             .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
             .build()
@@ -174,7 +180,7 @@ class CamService: Service() {
     private fun initOverlay() {
 
         val li = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-        rootView = li.inflate(R.layout.overlay, null)
+        rootView = li.inflate(R.layout.fragment_overlay, null)
         textureView = rootView?.findViewById(R.id.texPreview)
 
         val type = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O)
@@ -183,10 +189,24 @@ class CamService: Service() {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
 
         val params = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
             type,
-            WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         )
+
+        params.gravity = Gravity.TOP or Gravity.LEFT
+
+        params.x = 0
+        params.y = 0
+
+        // TODO: Navigate to home on click
+        // TODO: Update position
+        rootView?.setOnClickListener {
+            Log.d("OVERLAY", "Clicked")
+        }
+
 
         wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         wm!!.addView(rootView, params)
@@ -207,7 +227,6 @@ class CamService: Service() {
                 break
             }
         }
-
 
         previewSize = chooseSupportedSize(camId!!, width, height)
 
@@ -240,7 +259,7 @@ class CamService: Service() {
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getText(R.string.app_name))
             .setContentText(getText(R.string.app_name))
-            .setSmallIcon(R.drawable.notification_template_icon_bg)
+            .setSmallIcon(R.drawable.wakey_logo)
             .setContentIntent(pendingIntent)
             .setTicker(getText(R.string.app_name))
             .build()
