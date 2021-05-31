@@ -177,14 +177,15 @@ class CamService: Service() {
         // Initialize camera here if texture view already initialized
         if (textureView!!.isAvailable)
             initCam(textureView!!.width, textureView!!.height)
-        else
+        else {
             textureView!!.surfaceTextureListener = surfaceTextureListener
-
-        textureView!!.setOnClickListener {
-            val resultIntent = Intent(this, HomeActivity::class.java)
-            resultIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            startActivity(resultIntent)
+            textureView!!.setOnClickListener {
+                val resultIntent = Intent(this, HomeActivity::class.java)
+                resultIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(resultIntent)
+            }
         }
+
     }
 
     private fun initOverlay() {
