@@ -19,8 +19,11 @@ import android.util.Log
 import android.util.Size
 import android.view.*
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.getSystemService
 import com.eps.wakey.R
 import com.eps.wakey.activities.MainActivity
+import com.eps.wakey.activities.home.HomeActivity
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
@@ -49,6 +52,7 @@ class CamService: Service() {
     private var isPlaying = false
 
     var detector: FaceDetector? = null
+
 
     private val captureCallback = object : CameraCaptureSession.CaptureCallback() {
 
@@ -175,6 +179,12 @@ class CamService: Service() {
             initCam(textureView!!.width, textureView!!.height)
         else
             textureView!!.surfaceTextureListener = surfaceTextureListener
+
+        textureView!!.setOnClickListener {
+            val resultIntent = Intent(this, HomeActivity::class.java)
+            resultIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(resultIntent)
+        }
     }
 
     private fun initOverlay() {
