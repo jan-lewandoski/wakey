@@ -27,8 +27,6 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
-import java.lang.Float.min
-import java.util.concurrent.TimeUnit
 
 
 /**
@@ -39,6 +37,8 @@ class CamService: Service() {
     private var wm: WindowManager? = null
     private var rootView: View? = null
     private var textureView: TextureView? = null
+    private var overlayPosition: Position? = null
+    private var overlayParams: WindowManager.LayoutParams? = null
 
     private var cameraManager: CameraManager? = null
     private var previewSize: Size? = null
@@ -193,6 +193,7 @@ class CamService: Service() {
 
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private fun initOverlay() {
 
         val li = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
@@ -204,24 +205,19 @@ class CamService: Service() {
         else
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
 
-        val params = WindowManager.LayoutParams(
+        overlayParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             type,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
-        )
+        ).apply {
+            gravity = Gravity.TOP or Gravity.START
+            x = 0
+            y = 0
+        }
 
-        params.gravity = Gravity.TOP or Gravity.LEFT
-
-        params.x = 0
-        params.y = 0
-
-        // TODO: Navigate to home on click
-        // TODO: Update position
         rootView?.setOnClickListener {
-            Log.d("OVERLAY", "Clicked")
-
             val pendingIntent: PendingIntent =
                 Intent(this, HomeActivity::class.java).let { notificationIntent ->
                     PendingIntent.getActivity(this, 0, notificationIntent, 0)
@@ -229,9 +225,29 @@ class CamService: Service() {
             pendingIntent.send()
         }
 
+        rootView?.setOnTouchListener {
+                view, e ->
+            Log.d("OVERLAY", e.toString())
+
+            when (e.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    overlayPosition = overlayParams!!.position - e.position
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    overlayPosition?.let {
+                        overlayParams!!.position = it + e.position
+                        wm!!.updateViewLayout(rootView, overlayParams)
+                    }
+                }
+                MotionEvent.ACTION_UP -> {
+                    overlayPosition = null
+                }
+            }
+            false
+        }
 
         wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        wm!!.addView(rootView, params)
+        wm!!.addView(rootView, overlayParams)
     }
 
     @SuppressLint("MissingPermission")
@@ -452,6 +468,27 @@ class CamService: Service() {
         var SHOW_CAMERA_PREVIEW = false
         var EYE_TRACKING_SENSITIVITY = 0.3F
         var MINIMUM_FRAMES_PER_BLINK = 3
-
     }
+}
+
+private val MotionEvent.position: Position
+    get() = Position(rawX, rawY)
+
+private var WindowManager.LayoutParams.position: Position
+    get() = Position(x.toFloat(), y.toFloat())
+    set(value) {
+        x = value.x
+        y = value.y
+    }
+
+private data class Position(val fx: Float, val fy: Float) {
+
+    val x: Int
+        get() = fx.toInt()
+
+    val y: Int
+        get() = fy.toInt()
+
+    operator fun plus(p: Position) = Position(fx + p.fx, fy + p.fy)
+    operator fun minus(p: Position) = Position(fx - p.fx, fy - p.fy)
 }
