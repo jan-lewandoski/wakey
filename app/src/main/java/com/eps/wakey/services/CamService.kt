@@ -1,13 +1,14 @@
 package com.eps.wakey.services
 
+import android.animation.ObjectAnimator
+import android.animation.PropertyValuesHolder
+import android.animation.TimeInterpolator
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
-import android.graphics.ImageFormat
-import android.graphics.PixelFormat
-import android.graphics.SurfaceTexture
+import android.graphics.*
 import android.hardware.camera2.*
 import android.media.AudioManager
 import android.media.Image
@@ -19,6 +20,8 @@ import android.util.Log
 import android.util.Range
 import android.util.Size
 import android.view.*
+import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.Interpolator
 import android.widget.TextView
 import androidx.core.app.NotificationCompat
 import com.eps.wakey.R
@@ -51,6 +54,10 @@ class CamService: Service() {
 
     private var toneGen: ToneGenerator? = null
     private var isPlaying = false
+
+
+    private var speedY = 0.0f
+    private var last: Position = Position(0f,0f)
 
     var detector: FaceDetector? = null
     private var blinks = 0
@@ -227,19 +234,47 @@ class CamService: Service() {
 
         rootView?.setOnTouchListener {
                 view, e ->
-            Log.d("OVERLAY", e.toString())
+          //  Log.d("OVERLAY", e.toString())
 
             when (e.action) {
                 MotionEvent.ACTION_DOWN -> {
                     overlayPosition = overlayParams!!.position - e.position
+                    last = overlayParams!!.position - e.position
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    overlayPosition?.let {
-                        overlayParams!!.position = it + e.position
-                        wm!!.updateViewLayout(rootView, overlayParams)
-                    }
+                    overlayParams!!.position = overlayPosition!!.plus(e.position)
+                    wm!!.updateViewLayout(rootView, overlayParams)
+                    speedY = overlayParams!!.position.fy - last!!.fy
+                    last = overlayParams!!.position
+
                 }
                 MotionEvent.ACTION_UP -> {
+
+                    Log.d("here", "speed: " + speedY)
+
+                    val path = Path().apply {
+                        moveTo(overlayParams!!.position.fx, overlayParams!!.position.fy)
+                        arcTo(-overlayParams!!.position.fx,
+                            overlayParams!!.position.fy - VELOCITY_MULTIPLIER* kotlin.math.abs(speedY),
+                            overlayParams!!.position.fx,
+                            overlayParams!!.position.fy + VELOCITY_MULTIPLIER*kotlin.math.abs(speedY),
+                            if (speedY >= 0) 0f else 359f, if (speedY >= 0) 90f else -90f, true)
+                    }
+
+                    Log.d("here", "path: " + path)
+
+                    ValueAnimator.ofPropertyValuesHolder(
+                        PropertyValuesHolder.ofMultiFloat("pos",
+                            path)).apply {
+                        addUpdateListener { updated ->
+                            overlayParams!!.position = Position((updated.animatedValue as FloatArray)[0], (updated.animatedValue as FloatArray)[1])
+                            wm!!.updateViewLayout(rootView, overlayParams)
+
+                        }
+                        //interpolator = AccelerateDecelerateInterpolator()
+                        duration = 400
+                        start()
+                    }
                     overlayPosition = null
                 }
             }
@@ -464,7 +499,7 @@ class CamService: Service() {
         val CHANNEL_ID = "cam_service_channel_id"
         val CHANNEL_NAME = "cam_service_channel_name"
 
-
+        val VELOCITY_MULTIPLIER = 10
         var SHOW_CAMERA_PREVIEW = false
         var EYE_TRACKING_SENSITIVITY = 0.3F
         var MINIMUM_FRAMES_PER_BLINK = 3
