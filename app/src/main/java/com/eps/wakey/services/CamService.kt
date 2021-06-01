@@ -16,18 +16,19 @@ import android.media.ToneGenerator
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
+import android.util.Range
 import android.util.Size
 import android.view.*
+import android.widget.TextView
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.getSystemService
 import com.eps.wakey.R
-import com.eps.wakey.activities.MainActivity
 import com.eps.wakey.activities.home.HomeActivity
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
+import java.lang.Float.min
+import java.util.concurrent.TimeUnit
 
 
 /**
@@ -52,7 +53,12 @@ class CamService: Service() {
     private var isPlaying = false
 
     var detector: FaceDetector? = null
+    private var blinks = 0
+    private var blink_counter = 0
 
+    private var session_time: Long = 0
+
+    private var session_init_time: Long = 0
 
     private val captureCallback = object : CameraCaptureSession.CaptureCallback() {
 
@@ -93,6 +99,7 @@ class CamService: Service() {
         if (image != null) {
             eyesOpen(image)
         }
+        updateTime()
     }
 
     private val stateCallback = object : CameraDevice.StateCallback() {
@@ -135,6 +142,7 @@ class CamService: Service() {
     override fun onCreate() {
         super.onCreate()
 
+        session_init_time = System.currentTimeMillis()
         toneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
         // High-accuracy landmark detection and face classification
         val highAccuracyOpts = FaceDetectorOptions.Builder()
@@ -148,6 +156,7 @@ class CamService: Service() {
             .build()
         detector = FaceDetection.getClient(realTimeOpts)
         startForeground()
+
     }
 
     override fun onDestroy() {
@@ -164,7 +173,7 @@ class CamService: Service() {
 
         shouldShowPreview = false
 
-        initCam(320, 200)
+        initCam(480, 640)
     }
 
     private fun startWithPreview() {
@@ -179,13 +188,6 @@ class CamService: Service() {
             initCam(textureView!!.width, textureView!!.height)
         }else {
             textureView!!.surfaceTextureListener = surfaceTextureListener
-            textureView!!.setOnClickListener {
-                val pendingIntent: PendingIntent =
-                    Intent(this, HomeActivity::class.java).let { notificationIntent ->
-                        PendingIntent.getActivity(this, 0, notificationIntent, 0)
-                    }
-                pendingIntent.send()
-            }
         }
 
 
@@ -219,6 +221,12 @@ class CamService: Service() {
         // TODO: Update position
         rootView?.setOnClickListener {
             Log.d("OVERLAY", "Clicked")
+
+            val pendingIntent: PendingIntent =
+                Intent(this, HomeActivity::class.java).let { notificationIntent ->
+                    PendingIntent.getActivity(this, 0, notificationIntent, 0)
+                }
+            pendingIntent.send()
         }
 
 
@@ -311,6 +319,7 @@ class CamService: Service() {
                     CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE
                 )
                 set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH)
+                set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Range(24,24))
             }
 
             cameraDevice!!.createCaptureSession(
@@ -363,49 +372,63 @@ class CamService: Service() {
         }
     }
 
+    fun updateTime(){
+        val tv: TextView? = rootView?.findViewById(R.id.session_time_textview)
+
+        session_time = System.currentTimeMillis() -  session_init_time
+
+        val hours = (session_time / (1000 * 60 * 60) % 24)
+        val minutes = (session_time / (1000 * 60) % 60)
+        val seconds = (session_time / 1000) % 60
+
+        tv?.text = String.format("%02d:%02d:%02d",
+            hours, minutes, seconds
+        )
+    }
+    fun processProbability(prob: Float){
+
+        if (prob < EYE_TRACKING_SENSITIVITY - 0.1){
+            blink_counter += 1
+        }
+        else if (prob > EYE_TRACKING_SENSITIVITY){
+            if (blink_counter >= MINIMUM_FRAMES_PER_BLINK){
+                blink_counter = 0
+                toneGen?.startTone(ToneGenerator.TONE_DTMF_0, 50)
+                blinks++
+                Log.d("BLINKS", "Blinks: " + blinks)
+            }
+        }
+
+       // toneGen?.stopTone()
+
+
+    }
 
     fun eyesOpen(bitmap: Image): Boolean {
         val image = InputImage.fromMediaImage(bitmap, 270)
         var out = false
         val result = detector?.process(image)
             ?.addOnSuccessListener { faces ->
-                Log.d("log", "success")
                 if (faces.size == 0){
                     toneGen?.stopTone()
                 }
                 for (face in faces) {
-                    Log.d("log", "face")
-                    var prob = 1
+                    var prob: Float = 1.0f
                     if (face.leftEyeOpenProbability != null) {
                         val leftEyeOpenProb = face.leftEyeOpenProbability
-                        Log.d("FACES", "left eye: " + leftEyeOpenProb)
-                        if (leftEyeOpenProb < 0.3){
-                            prob = 0
-                        }
-                    }
-                    else{
-                        Log.d("FACES", "NOPE")
+                        prob = leftEyeOpenProb
                     }
                     if (face.rightEyeOpenProbability != null) {
                         val rightEyeOpenProb = face.rightEyeOpenProbability
-                        Log.d("FACES", "right eye: " + rightEyeOpenProb)
-                        if (rightEyeOpenProb < 0.3){
-                            prob = 0
-                        }
+                        prob = kotlin.math.min(rightEyeOpenProb, prob)
                     }
-                    if (prob < 0.1){
-                        toneGen?.startTone(ToneGenerator.TONE_DTMF_0)
-                    }
-                    else{
-                        toneGen?.stopTone()
-                    }
+                    processProbability(prob)
                 }
             }
             ?.addOnFailureListener { e ->
                 Log.d("log", "failed" + e)
             }
             ?.addOnCompleteListener {tasks ->
-                Log.d("log", "here")
                 bitmap.close()
             }
 
@@ -424,6 +447,11 @@ class CamService: Service() {
         val ONGOING_NOTIFICATION_ID = 6660
         val CHANNEL_ID = "cam_service_channel_id"
         val CHANNEL_NAME = "cam_service_channel_name"
+
+
+        var SHOW_CAMERA_PREVIEW = false
+        var EYE_TRACKING_SENSITIVITY = 0.3F
+        var MINIMUM_FRAMES_PER_BLINK = 3
 
     }
 }

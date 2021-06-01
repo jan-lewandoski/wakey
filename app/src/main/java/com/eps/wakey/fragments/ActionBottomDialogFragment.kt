@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.CompoundButton
 import androidx.appcompat.app.AppCompatActivity
 import com.eps.wakey.R
+import com.eps.wakey.services.CamService
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.slider.Slider
 import kotlinx.android.synthetic.main.bottom_sheet.*
@@ -31,12 +32,16 @@ class ActionBottomDialogFragment: BottomSheetDialogFragment() {
             val editor = sharedPref?.edit()
             editor.putBoolean("WITH_PREVIEW", switchPreview.isChecked)
             editor.apply()
+
+            CamService.SHOW_CAMERA_PREVIEW = b
         }
 
         view.sensitivitySlider?.addOnChangeListener(Slider.OnChangeListener { slider, value, fromUser ->
             val editor = sharedPref?.edit()
             editor.putFloat("EYE_TRACKING_SENSITIVITY", sensitivitySlider.value)
             editor.apply()
+
+            CamService.EYE_TRACKING_SENSITIVITY = value
         })
 
         val slider: Slider = view.sensitivitySlider

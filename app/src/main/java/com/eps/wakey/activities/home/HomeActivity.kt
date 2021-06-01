@@ -92,10 +92,10 @@ class HomeActivity : AppCompatActivity() {
         butStart.setOnClickListener {
             val sharedPref = applicationContext.getSharedPreferences("SETTINGS", MODE_PRIVATE)
 
-            SHOW_CAMERA_PREVIEW = sharedPref.getBoolean("WITH_PREVIEW", false)
-            EYE_TRACKING_SENSITIVITY = sharedPref.getFloat("EYE_TRACKING_SENSITIVITY", 0.3F)
+            CamService.SHOW_CAMERA_PREVIEW = sharedPref.getBoolean("WITH_PREVIEW", false)
+            CamService.EYE_TRACKING_SENSITIVITY = sharedPref.getFloat("EYE_TRACKING_SENSITIVITY", 0.3F)
 
-            if (SHOW_CAMERA_PREVIEW) {
+            if (CamService.SHOW_CAMERA_PREVIEW) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
 
                     // Don't have permission to draw over other apps yet - ask user to give permission
@@ -106,7 +106,7 @@ class HomeActivity : AppCompatActivity() {
             }
 
             if (!isServiceRunning(this, CamService::class.java)) {
-               if (SHOW_CAMERA_PREVIEW)  notifyService(CamService.ACTION_START_WITH_PREVIEW)
+               if (CamService.SHOW_CAMERA_PREVIEW)  notifyService(CamService.ACTION_START_WITH_PREVIEW)
                else notifyService(CamService.ACTION_START)
                 moveTaskToBack(true)
             }
@@ -137,7 +137,5 @@ class HomeActivity : AppCompatActivity() {
     companion object {
         val CODE_PERM_SYSTEM_ALERT_WINDOW = 6111
         val CODE_PERM_CAMERA = 6112
-        var SHOW_CAMERA_PREVIEW = false
-        var EYE_TRACKING_SENSITIVITY = 0.3F
     }
 }
