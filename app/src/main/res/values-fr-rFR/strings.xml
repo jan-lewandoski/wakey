@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="show_preview">Afficher la caméra</string>
+    <string name="sensitivity_slider">Sensibilité du Eye Tracking</string>
+    <string name="general_next">Suivant</string>
+    <string name="general_back">Retour</string>
+    <string name="general_done">Terminé</string>
+    <string name="general_start">Start</string>
+    <string name="general_stop">Stop</string>
+    <string name="welcome_title">Bienvenue</string>
+    <string name="welcome_description">Bonjour ! 👋 \n\nMon nom est Foxy et je vais vous guider dans vos premiers pas avec Wakey!</string>
+    <string name="welcome_action">Commencer</string>
+    <string name="about_title">Comment ça marche ?</string>
+    <string name="about_description">L\'Eye Traking analyse les mouvements de vos yeux. Si vous les fermez trop régulièrement, une alarme viendra vous réveiller ! \n\n Gardez les yeux sur la route ! 🔊</string>
+    <string name="eye_tracking_title">Eye Tracking</string>
+    <string name="eye_tracking_description">L\'Eye Tracking fonctionne en arrière plan. Vous pouvez afficher un aperçu de votre caméra ou le masquer si vous ne voulez pas être déconcentré. \n\n Cliquez sur "\Commencer\" et prenez la route ! 🚙</string>
+    <string name="eye_tracking_low">Faible</string>
+    <string name="eye_tracking_medium">Moyenne</string>
+    <string name="eye_tracking_high">Haute</string>
+    <string name="permissions_title">Autorisations</string>
+    <string name="permissions_description">Afin de faire de mon mieux, j\\\'ai besoin que vous me donniez l\\\'autorisation d\\\'utiliser votre caméra. \n\n Pas d\'inquiétude, aucune image n\'est stockée. 📱</string>
+    <string name="time_to_drive_title">Il est temps de conduire !</string>
+    <string name="time_to_drive_description">Nous sommes prêts à partir ! \n\n N\'oubliez pas que votre sécurité est notre préoccupation !</string>
+    <string name="time_to_drive_action">Terminé</string>
+</resources>

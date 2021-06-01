@@ -227,8 +227,6 @@ class CamService: Service() {
 
         rootView?.setOnTouchListener {
                 view, e ->
-            Log.d("OVERLAY", e.toString())
-
             when (e.action) {
                 MotionEvent.ACTION_DOWN -> {
                     overlayPosition = overlayParams!!.position - e.position
@@ -414,10 +412,6 @@ class CamService: Service() {
                 Log.d("BLINKS", "Blinks: " + blinks)
             }
         }
-
-       // toneGen?.stopTone()
-
-
     }
 
     fun eyesOpen(bitmap: Image): Boolean {

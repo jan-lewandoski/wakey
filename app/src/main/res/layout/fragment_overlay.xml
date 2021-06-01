@@ -23,10 +23,9 @@
             android:layout_height="wrap_content"
             android:background="@color/secondary_green"
             android:fontFamily="@font/chivo_bold"
-            android:text="TextView"
             android:textAlignment="center"
-            android:textColor="#4CAF50"
-            tools:text="02:42:34" />
+            android:textColor="@color/yellow"
+            tools:text="00:00:00" />
 
     </LinearLayout>
 
