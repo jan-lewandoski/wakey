@@ -2,6 +2,7 @@
 <resources>
     <string name="show_preview">Pokaż podgląd z aparatu</string>
     <string name="sensitivity_slider">Czułość śledzenia oczu</string>
+    <string name="settings_remark">Wszystkie zmiany będą widoczne po ponownym uruchomieniu!</string>
     <string name="general_next">Dalej</string>
     <string name="general_back">Wstecz</string>
     <string name="general_done">Gotowe</string>

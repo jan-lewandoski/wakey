@@ -3,6 +3,7 @@
     <string name="err_no_cam_permission" translatable="false">No permission to use the camera</string>
     <string name="show_preview">Show camera preview</string>
     <string name="sensitivity_slider">Eye tracking sensitivity</string>
+    <string name="settings_remark">All changes will be applied after restart!</string>
 
     <!-- General -->
     <string name="general_next">Next</string>

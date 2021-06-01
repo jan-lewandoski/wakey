@@ -8,6 +8,7 @@ import android.widget.CompoundButton
 import androidx.appcompat.app.AppCompatActivity
 import com.eps.wakey.R
 import com.eps.wakey.services.CamService
+import com.eps.wakey.utils.isServiceRunning
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.slider.Slider
 import kotlinx.android.synthetic.main.bottom_sheet.*
@@ -27,6 +28,14 @@ class ActionBottomDialogFragment: BottomSheetDialogFragment() {
         view.switchPreview.isChecked = sharedPref?.getBoolean("WITH_PREVIEW", false)!!
 
         view.sensitivitySlider.value = sharedPref?.getFloat("EYE_TRACKING_SENSITIVITY", 0.3f)!!
+
+        val serviceRunning = isServiceRunning(view.context, CamService::class.java)
+
+        if (serviceRunning) {
+            view.settingsRemark.visibility = View.VISIBLE
+        } else {
+            view.settingsRemark.visibility = View.GONE
+        }
 
         view.switchPreview?.setOnCheckedChangeListener { compoundButton: CompoundButton, b: Boolean ->
             val editor = sharedPref?.edit()

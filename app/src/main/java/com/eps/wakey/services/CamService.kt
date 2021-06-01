@@ -1,8 +1,5 @@
 package com.eps.wakey.services
-
-import android.animation.ObjectAnimator
 import android.animation.PropertyValuesHolder
-import android.animation.TimeInterpolator
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.*
@@ -10,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.*
 import android.hardware.camera2.*
+import android.graphics.*
 import android.media.AudioManager
 import android.media.Image
 import android.media.ImageReader
@@ -20,8 +18,6 @@ import android.util.Log
 import android.util.Range
 import android.util.Size
 import android.view.*
-import android.view.animation.AccelerateDecelerateInterpolator
-import android.view.animation.Interpolator
 import android.widget.TextView
 import androidx.core.app.NotificationCompat
 import com.eps.wakey.R
@@ -234,7 +230,7 @@ class CamService: Service() {
 
         rootView?.setOnTouchListener {
                 view, e ->
-          //  Log.d("OVERLAY", e.toString())
+            Log.d("OVERLAY", e.toString())
 
             when (e.action) {
                 MotionEvent.ACTION_DOWN -> {
@@ -449,10 +445,6 @@ class CamService: Service() {
                 Log.d("BLINKS", "Blinks: " + blinks)
             }
         }
-
-       // toneGen?.stopTone()
-
-
     }
 
     fun eyesOpen(bitmap: Image): Boolean {
