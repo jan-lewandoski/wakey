@@ -21,6 +21,8 @@
             android:id="@+id/session_time_textview"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@color/secondary_green"
+            android:fontFamily="@font/chivo_bold"
             android:text="TextView"
             android:textAlignment="center"
             android:textColor="#4CAF50"
