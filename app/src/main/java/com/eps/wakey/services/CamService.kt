@@ -175,16 +175,19 @@ class CamService: Service() {
         initOverlay()
 
         // Initialize camera here if texture view already initialized
-        if (textureView!!.isAvailable)
+        if (textureView!!.isAvailable) {
             initCam(textureView!!.width, textureView!!.height)
-        else {
+        }else {
             textureView!!.surfaceTextureListener = surfaceTextureListener
             textureView!!.setOnClickListener {
-                val resultIntent = Intent(this, HomeActivity::class.java)
-                resultIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                startActivity(resultIntent)
+                val pendingIntent: PendingIntent =
+                    Intent(this, HomeActivity::class.java).let { notificationIntent ->
+                        PendingIntent.getActivity(this, 0, notificationIntent, 0)
+                    }
+                pendingIntent.send()
             }
         }
+
 
     }
 
@@ -251,7 +254,7 @@ class CamService: Service() {
     private fun startForeground() {
 
         val pendingIntent: PendingIntent =
-            Intent(this, MainActivity::class.java).let { notificationIntent ->
+            Intent(this, HomeActivity::class.java).let { notificationIntent ->
                 PendingIntent.getActivity(this, 0, notificationIntent, 0)
             }
 
