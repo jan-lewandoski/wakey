@@ -64,4 +64,19 @@
                 android:textSize="@dimen/text_size_medium" />
         </LinearLayout>
 
+    <TextView
+        android:id="@+id/settingsRemark"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/chivo_regular"
+        android:paddingTop="12dp"
+        android:paddingBottom="24dp"
+        android:paddingRight="24dp"
+        android:paddingLeft="24dp"
+        android:textStyle="bold"
+        android:text="@string/settings_remark"
+        android:textColor="@color/yellow"
+        android:textSize="@dimen/text_size_medium"
+        android:visibility="gone"/>
+
 </LinearLayout>

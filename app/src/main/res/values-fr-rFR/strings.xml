@@ -2,6 +2,7 @@
 <resources>
     <string name="show_preview">Afficher la caméra</string>
     <string name="sensitivity_slider">Sensibilité du Eye Tracking</string>
+    <string name="settings_remark">Toutes les modifications seront appliquées après le redémarrage !</string>
     <string name="general_next">Suivant</string>
     <string name="general_back">Retour</string>
     <string name="general_done">Terminé</string>
