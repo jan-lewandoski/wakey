@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.*
 import android.hardware.camera2.*
-import android.graphics.*
 import android.media.AudioManager
 import android.media.Image
 import android.media.ImageReader
@@ -15,13 +14,12 @@ import android.media.ToneGenerator
 import android.os.Build
 import android.os.IBinder
 import android.speech.tts.TextToSpeech
-import android.speech.tts.TextToSpeechService
+import android.speech.tts.UtteranceProgressListener
 import android.util.Log
 import android.util.Range
 import android.util.Size
 import android.view.*
 import android.widget.TextView
-import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import com.eps.wakey.R
 import com.eps.wakey.activities.home.HomeActivity
@@ -29,7 +27,6 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
-import org.w3c.dom.Text
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.system.exitProcess
@@ -80,6 +77,8 @@ class CamService: Service() {
     private var session_time: Long = 0
 
     private var session_init_time: Long = 0
+
+    private var speaking: Boolean = false
 
     private val captureCallback = object : CameraCaptureSession.CaptureCallback() {
 
@@ -180,10 +179,27 @@ class CamService: Service() {
             tts?.language = Locale.forLanguageTag(getString(R.string.used_language))
             tts?.speak(getString(R.string.tts_welcome), TextToSpeech.QUEUE_FLUSH, null, R.string.tts_welcome.toString())
         }
+
+        val speechListener = object : UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {
+                speaking = true
+            }
+
+            override fun onDone(utteranceId: String?) {
+                speaking = false
+            }
+
+            override fun onError(utteranceId: String?) {
+                speaking = false
+            }
+        }
+
+        tts!!.setOnUtteranceProgressListener(speechListener)
         previousPeriods = mutableListOf<EyeBlinkPeriod>()
         startForeground()
 
     }
+
 
     override fun onDestroy() {
         super.onDestroy()
@@ -529,7 +545,9 @@ class CamService: Service() {
         if (framesWithLeftEyeClosed > FRAMES_TO_TRIGGER_ALARM){
             //toneGen?.startTone(ToneGenerator.TONE_DTMF_0, 1000)
 
-            tts?.speak(getString(R.string.tts_feeling_tired), TextToSpeech.QUEUE_FLUSH, null, R.string.tts_feeling_tired.toString())
+            if (!speaking) {
+                tts?.speak(getString(R.string.tts_feeling_tired), TextToSpeech.QUEUE_FLUSH, null, R.string.tts_feeling_tired.toString())
+            }
 
         }
         if (leftJustOpened){
