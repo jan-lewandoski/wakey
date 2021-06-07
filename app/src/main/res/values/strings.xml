@@ -42,5 +42,9 @@
     <string name="time_to_drive_fox_alt" translatable="false">Fox scooter</string>
     <string name="time_to_drive_action">Done</string>
 
+    <string name="used_language">EN</string>
 
+    <string name="tts_feeling_tired">You seem tired. Consider taking a break</string>
+
+    <string name="tts_welcome">Thank you for using Wakey! Have a nice trip</string>
 </resources>

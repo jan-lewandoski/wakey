@@ -57,6 +57,7 @@ class CamService: Service() {
 
     private var toneGen: ToneGenerator? = null
     private var isPlaying = false
+    private var tts:TextToSpeech? = null
 
     private var previousPeriods: MutableList<EyeBlinkPeriod>? = null
 
@@ -175,7 +176,10 @@ class CamService: Service() {
             .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
             .build()
         detector = FaceDetection.getClient(realTimeOpts)
-
+        tts = TextToSpeech(this) {
+            tts?.language = Locale.forLanguageTag(getString(R.string.used_language))
+            tts?.speak(getString(R.string.tts_welcome), TextToSpeech.QUEUE_FLUSH, null, R.string.tts_welcome.toString())
+        }
         previousPeriods = mutableListOf<EyeBlinkPeriod>()
         startForeground()
 
@@ -187,7 +191,8 @@ class CamService: Service() {
         toneGen?.stopTone()
         if (rootView != null)
             wm?.removeView(rootView)
-
+        tts?.stop()
+        tts?.shutdown()
         sendBroadcast(Intent(ACTION_STOPPED))
     }
 
@@ -523,11 +528,8 @@ class CamService: Service() {
 
         if (framesWithLeftEyeClosed > FRAMES_TO_TRIGGER_ALARM){
             //toneGen?.startTone(ToneGenerator.TONE_DTMF_0, 1000)
-            var tts:TextToSpeech? = null
-            tts = TextToSpeech(this) {
-                tts?.language = Locale.forLanguageTag("PL")
-                tts?.speak("Jest Pan Zmęczony", TextToSpeech.QUEUE_ADD, null, "a")
-            }
+
+            tts?.speak(getString(R.string.tts_feeling_tired), TextToSpeech.QUEUE_FLUSH, null, R.string.tts_feeling_tired.toString())
 
         }
         if (leftJustOpened){
