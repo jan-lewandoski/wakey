@@ -14,17 +14,20 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Wakey">
         <activity
+            android:name=".activities.home.CameraPreview"
             android:supportsPictureInPicture="true"
-            android:name=".activities.home.HomeActivity"></activity>
+            android:hardwareAccelerated="true">
+        </activity>
+        <activity
+            android:name=".activities.home.HomeActivity"/>
 
         <service android:name=".services.CamService" />
 
         <activity
             android:name=".activities.MainActivity"
-            android:noHistory="true"
-            android:screenOrientation="portrait">
+            android:noHistory="true">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"  />
+                <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>

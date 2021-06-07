@@ -22,6 +22,7 @@ import android.view.*
 import android.widget.TextView
 import androidx.core.app.NotificationCompat
 import com.eps.wakey.R
+import com.eps.wakey.activities.home.CameraPreview
 import com.eps.wakey.activities.home.HomeActivity
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
@@ -98,6 +99,7 @@ class CamService: Service() {
     private val surfaceTextureListener = object : TextureView.SurfaceTextureListener {
 
         override fun onSurfaceTextureAvailable(texture: SurfaceTexture, width: Int, height: Int) {
+            Log.d("PIP", "SurfaceTextureAvailable")
             initCam(width, height)
         }
 
@@ -228,8 +230,10 @@ class CamService: Service() {
 
         // Initialize camera here if texture view already initialized
         if (textureView!!.isAvailable) {
+            Log.d("PIP", "Texture view available")
             initCam(textureView!!.width, textureView!!.height)
         }else {
+            Log.d("PIP", "Texture view NOT available")
             textureView!!.surfaceTextureListener = surfaceTextureListener
         }
 
@@ -238,97 +242,100 @@ class CamService: Service() {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun initOverlay() {
+        val intent = Intent(this, CameraPreview::class.java)
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        startActivity(intent)
 
         val li = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-        rootView = li.inflate(R.layout.fragment_overlay, null)
+        rootView = li.inflate(R.layout.activity_camera_preview, null)
         textureView = rootView?.findViewById(R.id.texPreview)
 
-        val type = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O)
-            WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY
-        else
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-
-        overlayParams = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            type,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-            PixelFormat.TRANSLUCENT
-        ).apply {
-            gravity = Gravity.TOP or Gravity.START
-            x = 0
-            y = 0
-        }
-
-        rootView?.setOnClickListener {
-            val pendingIntent: PendingIntent =
-                Intent(this, HomeActivity::class.java).let { notificationIntent ->
-                    PendingIntent.getActivity(
-                        this, 0, notificationIntent, 0
-                    )
-                }
-            pendingIntent.send()
-        }
-
-        rootView?.setOnTouchListener {
-                view, e ->
-            Log.d("OVERLAY", e.toString())
-
-            when (e.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    overlayPosition = overlayParams!!.position - e.position
-                    last = overlayParams!!.position - e.position
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    overlayParams!!.position = overlayPosition!!.plus(e.position)
-                    wm!!.updateViewLayout(rootView, overlayParams)
-                    speedY = overlayParams!!.position.fy - last!!.fy
-                    last = overlayParams!!.position
-
-                }
-                MotionEvent.ACTION_UP -> {
-
-                    Log.d("here", "speed: " + speedY)
-
-                    val path = Path().apply {
-                        moveTo(overlayParams!!.position.fx, overlayParams!!.position.fy)
-                        arcTo(
-                            -overlayParams!!.position.fx,
-                            overlayParams!!.position.fy -
-                                    VELOCITY_MULTIPLIER* kotlin.math.abs(speedY),
-                            overlayParams!!.position.fx,
-                            overlayParams!!.position.fy +
-                                    VELOCITY_MULTIPLIER*kotlin.math.abs(speedY),
-                            if (speedY >= 0) 0f else 359f,
-                            if (speedY >= 0) 90f else -90f,
-                            true)
-                    }
-
-                    Log.d("here", "path: " + path)
-
-                    ValueAnimator.ofPropertyValuesHolder(
-                        PropertyValuesHolder.ofMultiFloat("pos",
-                            path)).apply {
-                        addUpdateListener { updated ->
-                            overlayParams!!.position = Position(
-                                (updated.animatedValue as FloatArray)[0],
-                                (updated.animatedValue as FloatArray)[1]
-                            )
-                            wm!!.updateViewLayout(rootView, overlayParams)
-
-                        }
-                        //interpolator = AccelerateDecelerateInterpolator()
-                        duration = 400
-                        start()
-                    }
-                    overlayPosition = null
-                }
-            }
-            false
-        }
-
-        wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        wm!!.addView(rootView, overlayParams)
+//        val type = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O)
+//            WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY
+//        else
+//            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+//
+//        overlayParams = WindowManager.LayoutParams(
+//            WindowManager.LayoutParams.WRAP_CONTENT,
+//            WindowManager.LayoutParams.WRAP_CONTENT,
+//            type,
+//            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+//            PixelFormat.TRANSLUCENT
+//        ).apply {
+//            gravity = Gravity.TOP or Gravity.START
+//            x = 0
+//            y = 0
+//        }
+//
+//        rootView?.setOnClickListener {
+//            val pendingIntent: PendingIntent =
+//                Intent(this, HomeActivity::class.java).let { notificationIntent ->
+//                    PendingIntent.getActivity(
+//                        this, 0, notificationIntent, 0
+//                    )
+//                }
+//            pendingIntent.send()
+//        }
+//
+//        rootView?.setOnTouchListener {
+//                view, e ->
+//            Log.d("OVERLAY", e.toString())
+//
+//            when (e.action) {
+//                MotionEvent.ACTION_DOWN -> {
+//                    overlayPosition = overlayParams!!.position - e.position
+//                    last = overlayParams!!.position - e.position
+//                }
+//                MotionEvent.ACTION_MOVE -> {
+//                    overlayParams!!.position = overlayPosition!!.plus(e.position)
+//                    wm!!.updateViewLayout(rootView, overlayParams)
+//                    speedY = overlayParams!!.position.fy - last!!.fy
+//                    last = overlayParams!!.position
+//
+//                }
+//                MotionEvent.ACTION_UP -> {
+//
+//                    Log.d("here", "speed: " + speedY)
+//
+//                    val path = Path().apply {
+//                        moveTo(overlayParams!!.position.fx, overlayParams!!.position.fy)
+//                        arcTo(
+//                            -overlayParams!!.position.fx,
+//                            overlayParams!!.position.fy -
+//                                    VELOCITY_MULTIPLIER* kotlin.math.abs(speedY),
+//                            overlayParams!!.position.fx,
+//                            overlayParams!!.position.fy +
+//                                    VELOCITY_MULTIPLIER*kotlin.math.abs(speedY),
+//                            if (speedY >= 0) 0f else 359f,
+//                            if (speedY >= 0) 90f else -90f,
+//                            true)
+//                    }
+//
+//                    Log.d("here", "path: " + path)
+//
+//                    ValueAnimator.ofPropertyValuesHolder(
+//                        PropertyValuesHolder.ofMultiFloat("pos",
+//                            path)).apply {
+//                        addUpdateListener { updated ->
+//                            overlayParams!!.position = Position(
+//                                (updated.animatedValue as FloatArray)[0],
+//                                (updated.animatedValue as FloatArray)[1]
+//                            )
+//                            wm!!.updateViewLayout(rootView, overlayParams)
+//
+//                        }
+//                        //interpolator = AccelerateDecelerateInterpolator()
+//                        duration = 400
+//                        start()
+//                    }
+//                    overlayPosition = null
+//                }
+//            }
+//            false
+//        }
+//
+//        wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+//        wm!!.addView(rootView, overlayParams)
     }
 
     @SuppressLint("MissingPermission")
@@ -397,14 +404,14 @@ class CamService: Service() {
             ).apply {
 
 
-                if (shouldShowPreview) {
-                    val texture = textureView!!.surfaceTexture!!
-                    texture.setDefaultBufferSize(previewSize!!.width, previewSize!!.height)
-                    val previewSurface = Surface(texture)
 
-                    targetSurfaces.add(previewSurface)
-                    addTarget(previewSurface)
-                }
+                val texture = textureView!!.surfaceTexture!!
+                texture.setDefaultBufferSize(previewSize!!.width, previewSize!!.height)
+                val previewSurface = Surface(texture)
+
+                Log.d("PIP", targetSurfaces.add(previewSurface).toString())
+                addTarget(previewSurface)
+
 
                 imageReader = ImageReader.newInstance(
                     previewSize!!.getWidth(), previewSize!!.getHeight(),
@@ -449,11 +456,13 @@ class CamService: Service() {
 
                     override fun onConfigureFailed(cameraCaptureSession: CameraCaptureSession) {
                         Log.e(TAG, "createCaptureSession()")
+                        Log.e("PIP","Failed")
                     }
                 }, null
             )
         } catch (e: CameraAccessException) {
             Log.e(TAG, "createCaptureSession", e)
+            Log.e("PIP", e.toString())
         }
     }
 
