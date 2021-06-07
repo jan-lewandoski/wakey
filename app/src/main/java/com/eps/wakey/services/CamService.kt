@@ -7,12 +7,11 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.*
 import android.hardware.camera2.*
-import android.media.AudioManager
-import android.media.Image
-import android.media.ImageReader
-import android.media.ToneGenerator
+import android.media.*
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
@@ -52,7 +51,6 @@ class CamService: Service() {
 
     private var shouldShowPreview = true
 
-    private var toneGen: ToneGenerator? = null
     private var isPlaying = false
     private var tts:TextToSpeech? = null
 
@@ -74,11 +72,15 @@ class CamService: Service() {
     private var totalFramesClosed = 0
     private var totalFramesOpen = 0
 
-    private var session_time: Long = 0
+    private var sessionTime: Long = 0
 
-    private var session_init_time: Long = 0
+    private var sessionInitTime: Long = 0
+
+    private var lastWarningTime: Long = 0
 
     private var speaking: Boolean = false
+
+    private var mediaPlayer: MediaPlayer? = null
 
     private val captureCallback = object : CameraCaptureSession.CaptureCallback() {
 
@@ -132,14 +134,12 @@ class CamService: Service() {
         override fun onDisconnected(currentCameraDevice: CameraDevice) {
             currentCameraDevice.close()
             cameraDevice = null
-            toneGen?.stopTone()
 
         }
 
         override fun onError(currentCameraDevice: CameraDevice, error: Int) {
             currentCameraDevice.close()
             cameraDevice = null
-            toneGen?.stopTone()
 
         }
     }
@@ -162,8 +162,7 @@ class CamService: Service() {
     override fun onCreate() {
         super.onCreate()
 
-        session_init_time = System.currentTimeMillis()
-        toneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+        sessionInitTime = System.currentTimeMillis()
         // High-accuracy landmark detection and face classification
         val highAccuracyOpts = FaceDetectorOptions.Builder()
             .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
@@ -175,9 +174,23 @@ class CamService: Service() {
             .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
             .build()
         detector = FaceDetection.getClient(realTimeOpts)
+
+        mediaPlayer = MediaPlayer.create(applicationContext, R.raw.sound)
+        mediaPlayer?.setVolume(1f,1f)
+        delay(500){
+            mediaPlayer?.start()
+        }
         tts = TextToSpeech(this) {
             tts?.language = Locale.forLanguageTag(getString(R.string.used_language))
-            tts?.speak(getString(R.string.tts_welcome), TextToSpeech.QUEUE_FLUSH, null, R.string.tts_welcome.toString())
+            delay(2500) {
+                if (!speaking) {
+                    tts?.speak(
+                        getString(R.string.tts_welcome),
+                        TextToSpeech.QUEUE_FLUSH,
+                        null, R.string.tts_welcome.toString()
+                    )
+                }
+            }
         }
 
         val speechListener = object : UtteranceProgressListener() {
@@ -204,11 +217,12 @@ class CamService: Service() {
     override fun onDestroy() {
         super.onDestroy()
         stopCamera()
-        toneGen?.stopTone()
         if (rootView != null)
             wm?.removeView(rootView)
         tts?.stop()
         tts?.shutdown()
+        mediaPlayer?.release()
+        mediaPlayer = null
         sendBroadcast(Intent(ACTION_STOPPED))
     }
 
@@ -476,11 +490,11 @@ class CamService: Service() {
     private fun updateTime(){
         val tv: TextView? = rootView?.findViewById(R.id.session_time_textview)
 
-        session_time = System.currentTimeMillis() -  session_init_time
+        sessionTime = System.currentTimeMillis() -  sessionInitTime
 
-        val hours = (session_time / (1000 * 60 * 60) % 24)
-        val minutes = (session_time / (1000 * 60) % 60)
-        val seconds = (session_time / 1000) % 60
+        val hours = (sessionTime / (1000 * 60 * 60) % 24)
+        val minutes = (sessionTime / (1000 * 60) % 60)
+        val seconds = (sessionTime / 1000) % 60
 
         tv?.text = String.format("%02d:%02d:%02d", hours, minutes, seconds)
     }
@@ -543,41 +557,37 @@ class CamService: Service() {
         //val rightJustOpened = eyeJustOpened(rightEye)
 
         if (framesWithLeftEyeClosed > FRAMES_TO_TRIGGER_ALARM){
-            //toneGen?.startTone(ToneGenerator.TONE_DTMF_0, 1000)
 
-            if (!speaking) {
-                tts?.speak(getString(R.string.tts_feeling_tired), TextToSpeech.QUEUE_FLUSH, null, R.string.tts_feeling_tired.toString())
+            if (!speaking && System.currentTimeMillis() - lastWarningTime > 5000) {
+                mediaPlayer = MediaPlayer.create(applicationContext, R.raw.warning)
+                mediaPlayer?.start()
+                delay(2500) {
+                    tts?.speak(getString(R.string.tts_feeling_tired), TextToSpeech.QUEUE_FLUSH, null, R.string.tts_feeling_tired.toString())
+                }
+                lastWarningTime = System.currentTimeMillis()
             }
 
         }
         if (leftJustOpened){
-            //toneGen?.stopTone()
             previousPeriods?.add(EyeBlinkPeriod(leftEye.framesOpen, leftEye.framesClosed))
                 if (previousPeriods?.size!! > PERIODS_TO_REMEMBER){
                     previousPeriods?.removeFirst()
                 }
             blinks++
             if (longBlinksOccur()){
-                toneGen?.startTone(ToneGenerator.TONE_DTMF_0, 1000)
+                previousPeriods?.clear()
+                if (!speaking && System.currentTimeMillis() - lastWarningTime > 5000) {
+                    mediaPlayer = MediaPlayer.create(applicationContext, R.raw.sound)
+                    mediaPlayer?.start()
+                    delay(1500) {
+                        tts?.speak(getString(R.string.tts_feeling_tired), TextToSpeech.QUEUE_FLUSH, null, R.string.tts_feeling_tired.toString())
+                    }
+                    lastWarningTime = System.currentTimeMillis()
+                }
             }
-            //toneGen?.startTone(ToneGenerator.TONE_DTMF_0, 50)
             resetFrameCounters()
             Log.d("BLINKS", "Blinks: " + previousPeriods)
         }
-//        if (biggerProb > EYE_TRACKING_SENSITIVITY){
-//            if (framesWithEyesClosed >= MINIMUM_FRAMES_PER_BLINK){
-//                toneGen?.stopTone()
-//                previousPeriods?.add(EyeBlinkPeriod(framesWithEyesClosed, framesWithEyesOpen))
-//                if (previousPeriods?.size!! > 20){
-//                    previousPeriods?.removeFirst()
-//                }
-//                framesWithEyesClosed = 0
-//                framesWithEyesOpen = 0
-//                toneGen?.startTone(ToneGenerator.TONE_DTMF_0, 50)
-//                blinks++
-//                Log.d("BLINKS", "Blinks: " + blinks)
-//            }
-//        }
     }
 
     private fun eyesOpen(bitmap: Image): Boolean {
@@ -585,9 +595,6 @@ class CamService: Service() {
         var out = false
         val result = detector?.process(image)
             ?.addOnSuccessListener { faces ->
-                if (faces.size == 0){
-                    toneGen?.stopTone()
-                }
                 for (face in faces) {
                     var leftEyeOpenProb = 1.0f
                     var rightEyeOpenProb = 1.0f
@@ -612,7 +619,11 @@ class CamService: Service() {
 
         return out
     }
-
+    private fun delay(millis: Long, foo: () -> Unit){
+        Handler(Looper.getMainLooper()).postDelayed({
+            foo()
+        }, millis)
+    }
     companion object {
 
         val TAG = "CamService"
