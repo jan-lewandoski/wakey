@@ -14,11 +14,14 @@ import android.media.ImageReader
 import android.media.ToneGenerator
 import android.os.Build
 import android.os.IBinder
+import android.speech.tts.TextToSpeech
+import android.speech.tts.TextToSpeechService
 import android.util.Log
 import android.util.Range
 import android.util.Size
 import android.view.*
 import android.widget.TextView
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import com.eps.wakey.R
 import com.eps.wakey.activities.home.HomeActivity
@@ -26,6 +29,10 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
+import org.w3c.dom.Text
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.system.exitProcess
 
 
 /**
@@ -51,13 +58,23 @@ class CamService: Service() {
     private var toneGen: ToneGenerator? = null
     private var isPlaying = false
 
+    private var previousPeriods: MutableList<EyeBlinkPeriod>? = null
+
 
     private var speedY = 0.0f
     private var last: Position = Position(0f,0f)
 
     var detector: FaceDetector? = null
     private var blinks = 0
-    private var blink_counter = 0
+    private var framesWithLeftEyeClosed = 0
+    private var framesWithLeftEyeOpen = 0
+
+
+    private var framesWithRightEyeClosed = 0
+    private var framesWithRightEyeOpen = 0
+
+    private var totalFramesClosed = 0
+    private var totalFramesOpen = 0
 
     private var session_time: Long = 0
 
@@ -158,6 +175,8 @@ class CamService: Service() {
             .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
             .build()
         detector = FaceDetection.getClient(realTimeOpts)
+
+        previousPeriods = mutableListOf<EyeBlinkPeriod>()
         startForeground()
 
     }
@@ -223,7 +242,9 @@ class CamService: Service() {
         rootView?.setOnClickListener {
             val pendingIntent: PendingIntent =
                 Intent(this, HomeActivity::class.java).let { notificationIntent ->
-                    PendingIntent.getActivity(this, 0, notificationIntent, 0)
+                    PendingIntent.getActivity(
+                        this, 0, notificationIntent, 0
+                    )
                 }
             pendingIntent.send()
         }
@@ -250,11 +271,16 @@ class CamService: Service() {
 
                     val path = Path().apply {
                         moveTo(overlayParams!!.position.fx, overlayParams!!.position.fy)
-                        arcTo(-overlayParams!!.position.fx,
-                            overlayParams!!.position.fy - VELOCITY_MULTIPLIER* kotlin.math.abs(speedY),
+                        arcTo(
+                            -overlayParams!!.position.fx,
+                            overlayParams!!.position.fy -
+                                    VELOCITY_MULTIPLIER* kotlin.math.abs(speedY),
                             overlayParams!!.position.fx,
-                            overlayParams!!.position.fy + VELOCITY_MULTIPLIER*kotlin.math.abs(speedY),
-                            if (speedY >= 0) 0f else 359f, if (speedY >= 0) 90f else -90f, true)
+                            overlayParams!!.position.fy +
+                                    VELOCITY_MULTIPLIER*kotlin.math.abs(speedY),
+                            if (speedY >= 0) 0f else 359f,
+                            if (speedY >= 0) 90f else -90f,
+                            true)
                     }
 
                     Log.d("here", "path: " + path)
@@ -263,7 +289,10 @@ class CamService: Service() {
                         PropertyValuesHolder.ofMultiFloat("pos",
                             path)).apply {
                         addUpdateListener { updated ->
-                            overlayParams!!.position = Position((updated.animatedValue as FloatArray)[0], (updated.animatedValue as FloatArray)[1])
+                            overlayParams!!.position = Position(
+                                (updated.animatedValue as FloatArray)[0],
+                                (updated.animatedValue as FloatArray)[1]
+                            )
                             wm!!.updateViewLayout(rootView, overlayParams)
 
                         }
@@ -302,7 +331,9 @@ class CamService: Service() {
         cameraManager!!.openCamera(camId, stateCallback, null)
     }
 
-    private fun chooseSupportedSize(camId: String, textureViewWidth: Int, textureViewHeight: Int): Size {
+    private fun chooseSupportedSize(
+        camId: String, textureViewWidth: Int, textureViewHeight: Int
+    ): Size {
         return Size(300, 480)
     }
 
@@ -340,7 +371,9 @@ class CamService: Service() {
         try {
             val targetSurfaces = ArrayList<Surface>()
 
-            val requestBuilder = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW).apply {
+            val requestBuilder = cameraDevice!!.createCaptureRequest(
+                CameraDevice.TEMPLATE_PREVIEW
+            ).apply {
 
 
                 if (shouldShowPreview) {
@@ -419,7 +452,7 @@ class CamService: Service() {
         }
     }
 
-    fun updateTime(){
+    private fun updateTime(){
         val tv: TextView? = rootView?.findViewById(R.id.session_time_textview)
 
         session_time = System.currentTimeMillis() -  session_init_time
@@ -428,26 +461,106 @@ class CamService: Service() {
         val minutes = (session_time / (1000 * 60) % 60)
         val seconds = (session_time / 1000) % 60
 
-        tv?.text = String.format("%02d:%02d:%02d",
-            hours, minutes, seconds
-        )
+        tv?.text = String.format("%02d:%02d:%02d", hours, minutes, seconds)
     }
-    fun processProbability(prob: Float){
-
-        if (prob < EYE_TRACKING_SENSITIVITY - 0.1){
-            blink_counter += 1
+    private fun incrementLeftEyeFrames(prob: Float){
+        if (prob < EYE_TRACKING_SENSITIVITY){
+            framesWithLeftEyeClosed += 1
         }
-        else if (prob > EYE_TRACKING_SENSITIVITY){
-            if (blink_counter >= MINIMUM_FRAMES_PER_BLINK){
-                blink_counter = 0
-                toneGen?.startTone(ToneGenerator.TONE_DTMF_0, 50)
-                blinks++
-                Log.d("BLINKS", "Blinks: " + blinks)
+        else {
+            framesWithLeftEyeOpen += 1
+        }
+    }
+    private fun incrementRightEyeFrames(prob: Float){
+        if (prob < EYE_TRACKING_SENSITIVITY){
+            framesWithRightEyeClosed += 1
+        }
+        else {
+            framesWithRightEyeOpen += 1
+        }
+    }
+    private fun resetFrameCounters(){
+        framesWithLeftEyeClosed = 0
+        framesWithLeftEyeOpen = 0
+        framesWithRightEyeClosed = 0
+        framesWithRightEyeOpen = 0
+    }
+    private fun eyeJustOpened(eye: Eye): Boolean{
+        if(eye.openProb > EYE_TRACKING_SENSITIVITY){
+            if(eye.framesClosed >= MINIMUM_FRAMES_PER_BLINK){
+                return true
             }
         }
+        return false
+    }
+    private fun longBlinksOccur(): Boolean{
+        if (previousPeriods?.size!! > 20){
+            Log.d("ERROR", "NOT GOOD")
+            exitProcess(0)
+        }
+        if (previousPeriods?.size  == 20 ){
+            var framesExceedingLimit = 0
+            for (p in previousPeriods!!){
+                if (p.framesClosed >= FRAMES_TO_DETERMINE_DROWSY){
+                    framesExceedingLimit++
+                }
+            }
+            if(framesExceedingLimit >= SUS_PERIODS_TO_DETERMINE_DROWSY){
+                return true
+            }
+        }
+        return false
+    }
+    private fun processProbability(leftEyeProb: Float, rightEyeProb: Float){
+        var tired = false
+        var warning = false
+        incrementLeftEyeFrames(leftEyeProb)
+        //incrementRightEyeFrames(rightEyeProb)
+        var leftEye = Eye(leftEyeProb, framesWithLeftEyeOpen, framesWithLeftEyeClosed)
+        //var rightEye = Eye(rightEyeProb, framesWithRightEyeOpen, framesWithRightEyeClosed)
+        val leftJustOpened = eyeJustOpened(leftEye)
+        //val rightJustOpened = eyeJustOpened(rightEye)
+
+        if (framesWithLeftEyeClosed > FRAMES_TO_TRIGGER_ALARM){
+            //toneGen?.startTone(ToneGenerator.TONE_DTMF_0, 1000)
+            var tts:TextToSpeech? = null
+            tts = TextToSpeech(this) {
+                tts?.language = Locale.forLanguageTag("PL")
+                tts?.speak("Jest Pan Zmęczony", TextToSpeech.QUEUE_ADD, null, "a")
+            }
+
+        }
+        if (leftJustOpened){
+            //toneGen?.stopTone()
+            previousPeriods?.add(EyeBlinkPeriod(leftEye.framesOpen, leftEye.framesClosed))
+                if (previousPeriods?.size!! > PERIODS_TO_REMEMBER){
+                    previousPeriods?.removeFirst()
+                }
+            blinks++
+            if (longBlinksOccur()){
+                toneGen?.startTone(ToneGenerator.TONE_DTMF_0, 1000)
+            }
+            //toneGen?.startTone(ToneGenerator.TONE_DTMF_0, 50)
+            resetFrameCounters()
+            Log.d("BLINKS", "Blinks: " + previousPeriods)
+        }
+//        if (biggerProb > EYE_TRACKING_SENSITIVITY){
+//            if (framesWithEyesClosed >= MINIMUM_FRAMES_PER_BLINK){
+//                toneGen?.stopTone()
+//                previousPeriods?.add(EyeBlinkPeriod(framesWithEyesClosed, framesWithEyesOpen))
+//                if (previousPeriods?.size!! > 20){
+//                    previousPeriods?.removeFirst()
+//                }
+//                framesWithEyesClosed = 0
+//                framesWithEyesOpen = 0
+//                toneGen?.startTone(ToneGenerator.TONE_DTMF_0, 50)
+//                blinks++
+//                Log.d("BLINKS", "Blinks: " + blinks)
+//            }
+//        }
     }
 
-    fun eyesOpen(bitmap: Image): Boolean {
+    private fun eyesOpen(bitmap: Image): Boolean {
         val image = InputImage.fromMediaImage(bitmap, 270)
         var out = false
         val result = detector?.process(image)
@@ -456,16 +569,17 @@ class CamService: Service() {
                     toneGen?.stopTone()
                 }
                 for (face in faces) {
-                    var prob: Float = 1.0f
+                    var leftEyeOpenProb = 1.0f
+                    var rightEyeOpenProb = 1.0f
+
                     if (face.leftEyeOpenProbability != null) {
-                        val leftEyeOpenProb = face.leftEyeOpenProbability
-                        prob = leftEyeOpenProb
+                        leftEyeOpenProb = face.leftEyeOpenProbability
                     }
                     if (face.rightEyeOpenProbability != null) {
-                        val rightEyeOpenProb = face.rightEyeOpenProbability
-                        prob = kotlin.math.min(rightEyeOpenProb, prob)
+                        rightEyeOpenProb = face.rightEyeOpenProbability
+
                     }
-                    processProbability(prob)
+                    processProbability(leftEyeOpenProb, rightEyeOpenProb)
                 }
             }
             ?.addOnFailureListener { e ->
@@ -495,6 +609,12 @@ class CamService: Service() {
         var SHOW_CAMERA_PREVIEW = false
         var EYE_TRACKING_SENSITIVITY = 0.3F
         var MINIMUM_FRAMES_PER_BLINK = 3
+        val BLINK_TO_SECONDS = 1f/24f
+        val PERIODS_TO_REMEMBER = 20
+        val FRAMES_TO_TRIGGER_ALARM = 12
+        val FRAMES_TO_DETERMINE_DROWSY = 7
+        val SUS_PERIODS_TO_DETERMINE_DROWSY = (PERIODS_TO_REMEMBER * 0.33).toInt()
+
     }
 }
 
@@ -518,4 +638,20 @@ private data class Position(val fx: Float, val fy: Float) {
 
     operator fun plus(p: Position) = Position(fx + p.fx, fy + p.fy)
     operator fun minus(p: Position) = Position(fx - p.fx, fy - p.fy)
+}
+private data class EyeBlinkPeriod(val framesOpen: Int, val framesClosed: Int) {
+    val timeOpen: Float
+        get() = framesOpen * CamService.BLINK_TO_SECONDS
+    val timeClosed: Float
+        get() = framesClosed * CamService.BLINK_TO_SECONDS
+    val totalFrames: Int
+        get() = framesOpen + framesClosed
+    val totalTime: Float
+        get() = totalFrames * CamService.BLINK_TO_SECONDS
+    operator fun plus(e: EyeBlinkPeriod) = EyeBlinkPeriod(
+        framesOpen+ e.framesOpen, framesClosed + e.framesClosed
+    )
+}
+private data class Eye(val openProb: Float, val framesOpen: Int, val framesClosed: Int){
+
 }
