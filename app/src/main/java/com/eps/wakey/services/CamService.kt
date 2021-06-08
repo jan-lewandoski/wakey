@@ -12,7 +12,9 @@ import android.media.Image
 import android.media.ImageReader
 import android.media.ToneGenerator
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
@@ -228,14 +230,18 @@ class CamService: Service() {
         // Initialize view drawn over other apps
         initOverlay()
 
-        // Initialize camera here if texture view already initialized
-        if (textureView!!.isAvailable) {
-            Log.d("PIP", "Texture view available")
-            initCam(textureView!!.width, textureView!!.height)
-        }else {
-            Log.d("PIP", "Texture view NOT available")
-            textureView!!.surfaceTextureListener = surfaceTextureListener
-        }
+        Handler(Looper.getMainLooper()).postDelayed({
+            textureView = CameraPreview?.instance?.findViewById(R.id.texPreview)
+            // Initialize camera here if texture view already initialized
+            if (textureView!!.isAvailable) {
+                Log.d("PIP", "Texture view available")
+                initCam(textureView!!.width, textureView!!.height)
+            }else {
+                Log.d("PIP", "Texture view NOT available")
+                textureView!!.surfaceTextureListener = surfaceTextureListener
+            }
+        }, 2000)
+
 
 
     }
@@ -246,9 +252,8 @@ class CamService: Service() {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         startActivity(intent)
 
-        val li = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-        rootView = li.inflate(R.layout.activity_camera_preview, null)
-        textureView = rootView?.findViewById(R.id.texPreview)
+//        val li = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+//        rootView = li.inflate(R.layout.activity_camera_preview, null)
 
 //        val type = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O)
 //            WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY
