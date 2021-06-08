@@ -1,4 +1,4 @@
-<img src="https://github.com/jan-lewandoski/wakey/blob/dev/app/src/main/res/drawable/readme_banner.png" alt="logo" />
+<img src="app/src/main/res/drawable/readme_banner.png" alt="logo" />
 
 
 **About the app** <br /> <br />

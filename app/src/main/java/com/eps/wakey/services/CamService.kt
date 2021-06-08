@@ -7,13 +7,13 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.*
 import android.hardware.camera2.*
-import android.graphics.*
-import android.media.AudioManager
-import android.media.Image
-import android.media.ImageReader
-import android.media.ToneGenerator
+import android.media.*
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
+import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.util.Log
 import android.util.Range
 import android.util.Size
@@ -26,6 +26,9 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.system.exitProcess
 
 
 /**
@@ -48,8 +51,10 @@ class CamService: Service() {
 
     private var shouldShowPreview = true
 
-    private var toneGen: ToneGenerator? = null
     private var isPlaying = false
+    private var tts:TextToSpeech? = null
+
+    private var previousPeriods: MutableList<EyeBlinkPeriod>? = null
 
 
     private var speedY = 0.0f
@@ -57,11 +62,25 @@ class CamService: Service() {
 
     var detector: FaceDetector? = null
     private var blinks = 0
-    private var blink_counter = 0
+    private var framesWithLeftEyeClosed = 0
+    private var framesWithLeftEyeOpen = 0
 
-    private var session_time: Long = 0
 
-    private var session_init_time: Long = 0
+    private var framesWithRightEyeClosed = 0
+    private var framesWithRightEyeOpen = 0
+
+    private var totalFramesClosed = 0
+    private var totalFramesOpen = 0
+
+    private var sessionTime: Long = 0
+
+    private var sessionInitTime: Long = 0
+
+    private var lastWarningTime: Long = 0
+
+    private var speaking: Boolean = false
+
+    private var mediaPlayer: MediaPlayer? = null
 
     private val captureCallback = object : CameraCaptureSession.CaptureCallback() {
 
@@ -115,14 +134,12 @@ class CamService: Service() {
         override fun onDisconnected(currentCameraDevice: CameraDevice) {
             currentCameraDevice.close()
             cameraDevice = null
-            toneGen?.stopTone()
 
         }
 
         override fun onError(currentCameraDevice: CameraDevice, error: Int) {
             currentCameraDevice.close()
             cameraDevice = null
-            toneGen?.stopTone()
 
         }
     }
@@ -145,8 +162,7 @@ class CamService: Service() {
     override fun onCreate() {
         super.onCreate()
 
-        session_init_time = System.currentTimeMillis()
-        toneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+        sessionInitTime = System.currentTimeMillis()
         // High-accuracy landmark detection and face classification
         val highAccuracyOpts = FaceDetectorOptions.Builder()
             .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
@@ -158,17 +174,55 @@ class CamService: Service() {
             .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
             .build()
         detector = FaceDetection.getClient(realTimeOpts)
+
+        mediaPlayer = MediaPlayer.create(applicationContext, R.raw.sound)
+        mediaPlayer?.setVolume(1f,1f)
+        delay(500){
+            mediaPlayer?.start()
+        }
+        tts = TextToSpeech(this) {
+            tts?.language = Locale.forLanguageTag(getString(R.string.used_language))
+            delay(2500) {
+                if (!speaking) {
+                    tts?.speak(
+                        getString(R.string.tts_welcome),
+                        TextToSpeech.QUEUE_FLUSH,
+                        null, R.string.tts_welcome.toString()
+                    )
+                }
+            }
+        }
+
+        val speechListener = object : UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {
+                speaking = true
+            }
+
+            override fun onDone(utteranceId: String?) {
+                speaking = false
+            }
+
+            override fun onError(utteranceId: String?) {
+                speaking = false
+            }
+        }
+
+        tts!!.setOnUtteranceProgressListener(speechListener)
+        previousPeriods = mutableListOf<EyeBlinkPeriod>()
         startForeground()
 
     }
 
+
     override fun onDestroy() {
         super.onDestroy()
         stopCamera()
-        toneGen?.stopTone()
         if (rootView != null)
             wm?.removeView(rootView)
-
+        tts?.stop()
+        tts?.shutdown()
+        mediaPlayer?.release()
+        mediaPlayer = null
         sendBroadcast(Intent(ACTION_STOPPED))
     }
 
@@ -223,7 +277,9 @@ class CamService: Service() {
         rootView?.setOnClickListener {
             val pendingIntent: PendingIntent =
                 Intent(this, HomeActivity::class.java).let { notificationIntent ->
-                    PendingIntent.getActivity(this, 0, notificationIntent, 0)
+                    PendingIntent.getActivity(
+                        this, 0, notificationIntent, 0
+                    )
                 }
             pendingIntent.send()
         }
@@ -250,11 +306,16 @@ class CamService: Service() {
 
                     val path = Path().apply {
                         moveTo(overlayParams!!.position.fx, overlayParams!!.position.fy)
-                        arcTo(-overlayParams!!.position.fx,
-                            overlayParams!!.position.fy - VELOCITY_MULTIPLIER* kotlin.math.abs(speedY),
+                        arcTo(
+                            -overlayParams!!.position.fx,
+                            overlayParams!!.position.fy -
+                                    VELOCITY_MULTIPLIER* kotlin.math.abs(speedY),
                             overlayParams!!.position.fx,
-                            overlayParams!!.position.fy + VELOCITY_MULTIPLIER*kotlin.math.abs(speedY),
-                            if (speedY >= 0) 0f else 359f, if (speedY >= 0) 90f else -90f, true)
+                            overlayParams!!.position.fy +
+                                    VELOCITY_MULTIPLIER*kotlin.math.abs(speedY),
+                            if (speedY >= 0) 0f else 359f,
+                            if (speedY >= 0) 90f else -90f,
+                            true)
                     }
 
                     Log.d("here", "path: " + path)
@@ -263,7 +324,10 @@ class CamService: Service() {
                         PropertyValuesHolder.ofMultiFloat("pos",
                             path)).apply {
                         addUpdateListener { updated ->
-                            overlayParams!!.position = Position((updated.animatedValue as FloatArray)[0], (updated.animatedValue as FloatArray)[1])
+                            overlayParams!!.position = Position(
+                                (updated.animatedValue as FloatArray)[0],
+                                (updated.animatedValue as FloatArray)[1]
+                            )
                             wm!!.updateViewLayout(rootView, overlayParams)
 
                         }
@@ -302,7 +366,9 @@ class CamService: Service() {
         cameraManager!!.openCamera(camId, stateCallback, null)
     }
 
-    private fun chooseSupportedSize(camId: String, textureViewWidth: Int, textureViewHeight: Int): Size {
+    private fun chooseSupportedSize(
+        camId: String, textureViewWidth: Int, textureViewHeight: Int
+    ): Size {
         return Size(300, 480)
     }
 
@@ -340,7 +406,9 @@ class CamService: Service() {
         try {
             val targetSurfaces = ArrayList<Surface>()
 
-            val requestBuilder = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW).apply {
+            val requestBuilder = cameraDevice!!.createCaptureRequest(
+                CameraDevice.TEMPLATE_PREVIEW
+            ).apply {
 
 
                 if (shouldShowPreview) {
@@ -419,53 +487,126 @@ class CamService: Service() {
         }
     }
 
-    fun updateTime(){
+    private fun updateTime(){
         val tv: TextView? = rootView?.findViewById(R.id.session_time_textview)
 
-        session_time = System.currentTimeMillis() -  session_init_time
+        sessionTime = System.currentTimeMillis() -  sessionInitTime
 
-        val hours = (session_time / (1000 * 60 * 60) % 24)
-        val minutes = (session_time / (1000 * 60) % 60)
-        val seconds = (session_time / 1000) % 60
+        val hours = (sessionTime / (1000 * 60 * 60) % 24)
+        val minutes = (sessionTime / (1000 * 60) % 60)
+        val seconds = (sessionTime / 1000) % 60
 
-        tv?.text = String.format("%02d:%02d:%02d",
-            hours, minutes, seconds
-        )
+        tv?.text = String.format("%02d:%02d:%02d", hours, minutes, seconds)
     }
-    fun processProbability(prob: Float){
-
-        if (prob < EYE_TRACKING_SENSITIVITY - 0.1){
-            blink_counter += 1
+    private fun incrementLeftEyeFrames(prob: Float){
+        if (prob < EYE_TRACKING_SENSITIVITY){
+            framesWithLeftEyeClosed += 1
         }
-        else if (prob > EYE_TRACKING_SENSITIVITY){
-            if (blink_counter >= MINIMUM_FRAMES_PER_BLINK){
-                blink_counter = 0
-                toneGen?.startTone(ToneGenerator.TONE_DTMF_0, 50)
-                blinks++
-                Log.d("BLINKS", "Blinks: " + blinks)
+        else {
+            framesWithLeftEyeOpen += 1
+        }
+    }
+    private fun incrementRightEyeFrames(prob: Float){
+        if (prob < EYE_TRACKING_SENSITIVITY){
+            framesWithRightEyeClosed += 1
+        }
+        else {
+            framesWithRightEyeOpen += 1
+        }
+    }
+    private fun resetFrameCounters(){
+        framesWithLeftEyeClosed = 0
+        framesWithLeftEyeOpen = 0
+        framesWithRightEyeClosed = 0
+        framesWithRightEyeOpen = 0
+    }
+    private fun eyeJustOpened(eye: Eye): Boolean{
+        if(eye.openProb > EYE_TRACKING_SENSITIVITY){
+            if(eye.framesClosed >= MINIMUM_FRAMES_PER_BLINK){
+                return true
             }
         }
+        return false
+    }
+    private fun longBlinksOccur(): Boolean{
+        if (previousPeriods?.size!! > 20){
+            Log.d("ERROR", "NOT GOOD")
+            exitProcess(0)
+        }
+        if (previousPeriods?.size  == 20 ){
+            var framesExceedingLimit = 0
+            for (p in previousPeriods!!){
+                if (p.framesClosed >= FRAMES_TO_DETERMINE_DROWSY){
+                    framesExceedingLimit++
+                }
+            }
+            if(framesExceedingLimit >= SUS_PERIODS_TO_DETERMINE_DROWSY){
+                return true
+            }
+        }
+        return false
+    }
+    private fun processProbability(leftEyeProb: Float, rightEyeProb: Float){
+        var tired = false
+        var warning = false
+        incrementLeftEyeFrames(leftEyeProb)
+        //incrementRightEyeFrames(rightEyeProb)
+        var leftEye = Eye(leftEyeProb, framesWithLeftEyeOpen, framesWithLeftEyeClosed)
+        //var rightEye = Eye(rightEyeProb, framesWithRightEyeOpen, framesWithRightEyeClosed)
+        val leftJustOpened = eyeJustOpened(leftEye)
+        //val rightJustOpened = eyeJustOpened(rightEye)
+
+        if (framesWithLeftEyeClosed > FRAMES_TO_TRIGGER_ALARM){
+
+            if (!speaking && System.currentTimeMillis() - lastWarningTime > 5000) {
+                mediaPlayer = MediaPlayer.create(applicationContext, R.raw.warning)
+                mediaPlayer?.start()
+                delay(2500) {
+                    tts?.speak(getString(R.string.tts_feeling_tired), TextToSpeech.QUEUE_FLUSH, null, R.string.tts_feeling_tired.toString())
+                }
+                lastWarningTime = System.currentTimeMillis()
+            }
+
+        }
+        if (leftJustOpened){
+            previousPeriods?.add(EyeBlinkPeriod(leftEye.framesOpen, leftEye.framesClosed))
+                if (previousPeriods?.size!! > PERIODS_TO_REMEMBER){
+                    previousPeriods?.removeFirst()
+                }
+            blinks++
+            if (longBlinksOccur()){
+                previousPeriods?.clear()
+                if (!speaking && System.currentTimeMillis() - lastWarningTime > 5000) {
+                    mediaPlayer = MediaPlayer.create(applicationContext, R.raw.sound)
+                    mediaPlayer?.start()
+                    delay(1500) {
+                        tts?.speak(getString(R.string.tts_feeling_tired), TextToSpeech.QUEUE_FLUSH, null, R.string.tts_feeling_tired.toString())
+                    }
+                    lastWarningTime = System.currentTimeMillis()
+                }
+            }
+            resetFrameCounters()
+            Log.d("BLINKS", "Blinks: " + previousPeriods)
+        }
     }
 
-    fun eyesOpen(bitmap: Image): Boolean {
+    private fun eyesOpen(bitmap: Image): Boolean {
         val image = InputImage.fromMediaImage(bitmap, 270)
         var out = false
         val result = detector?.process(image)
             ?.addOnSuccessListener { faces ->
-                if (faces.size == 0){
-                    toneGen?.stopTone()
-                }
                 for (face in faces) {
-                    var prob: Float = 1.0f
+                    var leftEyeOpenProb = 1.0f
+                    var rightEyeOpenProb = 1.0f
+
                     if (face.leftEyeOpenProbability != null) {
-                        val leftEyeOpenProb = face.leftEyeOpenProbability
-                        prob = leftEyeOpenProb
+                        leftEyeOpenProb = face.leftEyeOpenProbability
                     }
                     if (face.rightEyeOpenProbability != null) {
-                        val rightEyeOpenProb = face.rightEyeOpenProbability
-                        prob = kotlin.math.min(rightEyeOpenProb, prob)
+                        rightEyeOpenProb = face.rightEyeOpenProbability
+
                     }
-                    processProbability(prob)
+                    processProbability(leftEyeOpenProb, rightEyeOpenProb)
                 }
             }
             ?.addOnFailureListener { e ->
@@ -478,7 +619,11 @@ class CamService: Service() {
 
         return out
     }
-
+    private fun delay(millis: Long, foo: () -> Unit){
+        Handler(Looper.getMainLooper()).postDelayed({
+            foo()
+        }, millis)
+    }
     companion object {
 
         val TAG = "CamService"
@@ -495,6 +640,12 @@ class CamService: Service() {
         var SHOW_CAMERA_PREVIEW = false
         var EYE_TRACKING_SENSITIVITY = 0.3F
         var MINIMUM_FRAMES_PER_BLINK = 3
+        val BLINK_TO_SECONDS = 1f/24f
+        val PERIODS_TO_REMEMBER = 20
+        val FRAMES_TO_TRIGGER_ALARM = 12
+        val FRAMES_TO_DETERMINE_DROWSY = 7
+        val SUS_PERIODS_TO_DETERMINE_DROWSY = (PERIODS_TO_REMEMBER * 0.33).toInt()
+
     }
 }
 
@@ -518,4 +669,20 @@ private data class Position(val fx: Float, val fy: Float) {
 
     operator fun plus(p: Position) = Position(fx + p.fx, fy + p.fy)
     operator fun minus(p: Position) = Position(fx - p.fx, fy - p.fy)
+}
+private data class EyeBlinkPeriod(val framesOpen: Int, val framesClosed: Int) {
+    val timeOpen: Float
+        get() = framesOpen * CamService.BLINK_TO_SECONDS
+    val timeClosed: Float
+        get() = framesClosed * CamService.BLINK_TO_SECONDS
+    val totalFrames: Int
+        get() = framesOpen + framesClosed
+    val totalTime: Float
+        get() = totalFrames * CamService.BLINK_TO_SECONDS
+    operator fun plus(e: EyeBlinkPeriod) = EyeBlinkPeriod(
+        framesOpen+ e.framesOpen, framesClosed + e.framesClosed
+    )
+}
+private data class Eye(val openProb: Float, val framesOpen: Int, val framesClosed: Int){
+
 }

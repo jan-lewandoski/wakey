@@ -23,4 +23,9 @@
     <string name="time_to_drive_title">Il est temps de conduire !</string>
     <string name="time_to_drive_description">Nous sommes prêts à partir ! \n\n N\'oubliez pas que votre sécurité est notre préoccupation !</string>
     <string name="time_to_drive_action">Terminé</string>
+    <string name="used_language">FR</string>
+    <string name="tts_feeling_tired">(Curses in French)</string>
+    <string name="tts_welcome">(Cries in French)</string>
+
+
 </resources>

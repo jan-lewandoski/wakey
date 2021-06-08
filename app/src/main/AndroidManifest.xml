@@ -13,7 +13,9 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Wakey">
-        <activity android:name=".activities.home.HomeActivity"></activity>
+        <activity
+            android:supportsPictureInPicture="true"
+            android:name=".activities.home.HomeActivity"></activity>
 
         <service android:name=".services.CamService" />
 
