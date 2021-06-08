@@ -23,4 +23,8 @@
     <string name="time_to_drive_title">Ruszajmy!</string>
     <string name="time_to_drive_description">Wszystko gotowe! \n\n Pamiętaj - Twoje bezpieczeństwo jest naszym priorytetem!</string>
     <string name="time_to_drive_action">Gotowe</string>
+    <string name="used_language">PL</string>
+    <string name="tts_feeling_tired">Zasypiasz! Uważaj</string>
+    <string name="tts_welcome">Życzymy miłej podróży z łejki!</string>
+
 </resources>

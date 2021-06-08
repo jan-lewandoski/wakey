@@ -1,6 +1,7 @@
 package com.eps.wakey.activities.home
 
 import android.Manifest
+import android.app.PictureInPictureParams
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -17,6 +18,8 @@ import com.eps.wakey.R
 import com.eps.wakey.utils.isServiceRunning
 import android.provider.Settings
 import android.util.Log
+import android.util.Rational
+import androidx.annotation.RequiresApi
 import com.eps.wakey.fragments.ActionBottomFragment
 import com.eps.wakey.services.CamService
 import kotlinx.android.synthetic.main.activity_home.*
@@ -31,6 +34,16 @@ class HomeActivity : AppCompatActivity() {
                 CamService.ACTION_STOPPED -> flipButtonVisibility(false)
             }
         }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    override fun onUserLeaveHint() {
+        val rational = Rational(1,1);
+
+        val params = PictureInPictureParams.Builder()
+        params.setAspectRatio(rational)
+        enterPictureInPictureMode(params.build())
+        super.onUserLeaveHint()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
