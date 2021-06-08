@@ -35,17 +35,6 @@ class HomeActivity : AppCompatActivity() {
             }
         }
     }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun onUserLeaveHint() {
-        val rational = Rational(1,1);
-
-        val params = PictureInPictureParams.Builder()
-        params.setAspectRatio(rational)
-        enterPictureInPictureMode(params.build())
-        super.onUserLeaveHint()
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

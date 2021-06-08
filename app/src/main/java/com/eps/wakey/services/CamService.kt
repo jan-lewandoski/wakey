@@ -183,6 +183,7 @@ class CamService: Service() {
         tts = TextToSpeech(this) {
             tts?.language = Locale.forLanguageTag(getString(R.string.used_language))
             delay(2500) {
+                Log.d("heelo", tts?.voices.toString())
                 if (!speaking) {
                     tts?.speak(
                         getString(R.string.tts_welcome),
@@ -550,25 +551,30 @@ class CamService: Service() {
         var tired = false
         var warning = false
         incrementLeftEyeFrames(leftEyeProb)
-        //incrementRightEyeFrames(rightEyeProb)
+        incrementRightEyeFrames(rightEyeProb)
         var leftEye = Eye(leftEyeProb, framesWithLeftEyeOpen, framesWithLeftEyeClosed)
-        //var rightEye = Eye(rightEyeProb, framesWithRightEyeOpen, framesWithRightEyeClosed)
+        var rightEye = Eye(rightEyeProb, framesWithRightEyeOpen, framesWithRightEyeClosed)
         val leftJustOpened = eyeJustOpened(leftEye)
-        //val rightJustOpened = eyeJustOpened(rightEye)
+        val rightJustOpened = eyeJustOpened(rightEye)
 
-        if (framesWithLeftEyeClosed > FRAMES_TO_TRIGGER_ALARM){
+        val minFramesClosed = kotlin.math.min(framesWithLeftEyeClosed, framesWithRightEyeClosed)
 
-            if (!speaking && System.currentTimeMillis() - lastWarningTime > 5000) {
+        if (minFramesClosed > FRAMES_TO_TRIGGER_ALARM){
+
+            if ( !speaking &&  !mediaPlayer?.isPlaying!!) {
                 mediaPlayer = MediaPlayer.create(applicationContext, R.raw.warning)
                 mediaPlayer?.start()
-                delay(2500) {
-                    tts?.speak(getString(R.string.tts_feeling_tired), TextToSpeech.QUEUE_FLUSH, null, R.string.tts_feeling_tired.toString())
+                if(System.currentTimeMillis() - lastWarningTime > MILLIS_INTERVAL_BETWEEN_ALERTS)
+                {
+                    delay(2500) {
+                        tts?.speak(getString(R.string.tts_feeling_tired), TextToSpeech.QUEUE_FLUSH, null, R.string.tts_feeling_tired.toString())
+                    }
+                    lastWarningTime = System.currentTimeMillis()
                 }
-                lastWarningTime = System.currentTimeMillis()
             }
 
         }
-        if (leftJustOpened){
+        if (leftJustOpened || rightJustOpened){
             previousPeriods?.add(EyeBlinkPeriod(leftEye.framesOpen, leftEye.framesClosed))
                 if (previousPeriods?.size!! > PERIODS_TO_REMEMBER){
                     previousPeriods?.removeFirst()
@@ -576,7 +582,7 @@ class CamService: Service() {
             blinks++
             if (longBlinksOccur()){
                 previousPeriods?.clear()
-                if (!speaking && System.currentTimeMillis() - lastWarningTime > 5000) {
+                if (!mediaPlayer?.isPlaying!! && !speaking && System.currentTimeMillis() - lastWarningTime > MILLIS_INTERVAL_BETWEEN_ALERTS) {
                     mediaPlayer = MediaPlayer.create(applicationContext, R.raw.sound)
                     mediaPlayer?.start()
                     delay(1500) {
@@ -642,9 +648,10 @@ class CamService: Service() {
         var MINIMUM_FRAMES_PER_BLINK = 3
         val BLINK_TO_SECONDS = 1f/24f
         val PERIODS_TO_REMEMBER = 20
-        val FRAMES_TO_TRIGGER_ALARM = 12
-        val FRAMES_TO_DETERMINE_DROWSY = 7
-        val SUS_PERIODS_TO_DETERMINE_DROWSY = (PERIODS_TO_REMEMBER * 0.33).toInt()
+        val FRAMES_TO_TRIGGER_ALARM = 24
+        val FRAMES_TO_DETERMINE_DROWSY = 9
+        val SUS_PERIODS_TO_DETERMINE_DROWSY = (PERIODS_TO_REMEMBER * 0.5).toInt()
+        val MILLIS_INTERVAL_BETWEEN_ALERTS = 60000
 
     }
 }
