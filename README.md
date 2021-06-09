@@ -1,10 +1,8 @@
-<img src="https://github.com/jan-lewandoski/wakey/blob/dev/app/src/main/res/drawable/readme_banner.png" alt="logo" width="100%" />
+<img src="app/src/main/res/drawable/readme_banner.png" alt="logo" />
 
 
-## Wakey!
-
-**About** <br />
-Wakey is an Android app that prevents drivers from falling asleep while driving. <br />
+**About the app** <br /> <br />
+Wakey is an Android app that prevents you from falling asleep while driving. <br />
 It tracks your eyes and makes an alarm once it detects fatigue symptoms. <br />
 What makes Wakey unique is the ability of working in the background. <br />
 Just start driving and relax, while Wakey takes care of your safety.
@@ -12,10 +10,10 @@ Just start driving and relax, while Wakey takes care of your safety.
 ##
 
 **Features**
-- Eye tracking
+- Eye tracking 👀
 - Optional camera preview
 - Works in the background
-- Works with screen locked
+- Works with a locked screen
 - Simple UI
 
 ##

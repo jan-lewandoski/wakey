@@ -210,6 +210,24 @@ class CamService: Service() {
 
         tts!!.setOnUtteranceProgressListener(speechListener)
         previousPeriods = mutableListOf<EyeBlinkPeriod>()
+
+        mediaPlayer = MediaPlayer.create(applicationContext, R.raw.sound)
+        mediaPlayer?.setVolume(1f,1f)
+        delay(500){
+            mediaPlayer?.start()
+        }
+        tts = TextToSpeech(this) {
+            tts?.language = Locale.forLanguageTag(getString(R.string.used_language))
+            delay(2500) {
+                if (!speaking) {
+                    tts?.speak(
+                        getString(R.string.tts_welcome),
+                        TextToSpeech.QUEUE_FLUSH,
+                        null, R.string.tts_welcome.toString()
+                    )
+                }
+            }
+        }
         startForeground()
 
     }
