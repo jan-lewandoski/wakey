@@ -48,9 +48,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:valueFrom="0.0"
-                android:valueTo="1.0"
-                android:stepSize="0.1"
+                android:valueFrom="0.15"
+                android:valueTo="0.55"
+                android:stepSize="0.05"
                 android:value="0.3"
                 android:backgroundTint="@color/white"
                 />

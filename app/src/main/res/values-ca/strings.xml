@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="show_preview">Mostrar la càmera</string>
+    <string name="sensitivity_slider">Rastrejador d\'ulls</string>
+    <string name="general_next">Següent</string>
+    <string name="general_back">Enredera</string>
+    <string name="general_done">Acabat</string>
+    <string name="general_start">Start</string>
+    <string name="general_stop">Stop</string>
+    <string name="welcome_title">Benvingut</string>
+    <string name="welcome_description">Hola! 👋 El meu nom és Foxy i t\'ensenyaré com funciona Wakey. Fes clic en el botó o desplaçat cap a l\'esquerra per començar!</string>
+    <string name="welcome_action">Començar</string>
+    <string name="about_title">Com funciona?</string>
+    <string name="about_description">M\'ocuparé de la teva seguretat restrejant els teus ulls i el teu rostre. Si detecto que t\'estàs quedant adormit t\'avisaré amb una forta alarma!  🔊</string>
+    <string name="eye_tracking_title">Rastrejador d\'ulls</string>
+    <string name="eye_tracking_description">El rastrejador d\'ulls funciona completament en segon pla. Depenent de l\'opció que elegeixis, puc mostrar-te la càmera o ocultar-la per no distreure\'t. Simplement fes clic en \"Start\" i comença a  conduir! 🚙</string>
+    <string name="eye_tracking_low">Baix</string>
+    <string name="eye_tracking_medium">Mitja</string>
+    <string name="eye_tracking_high">Alt</string>
+    <string name="permissions_title">Permisos</string>
+    <string name="permissions_description">Per poder donar el millor de mi, necessitaré el teu permís per poder utilitzar la càmera. No et preocupis, tot el que veig roman al dispositiu. 📱</string>
+    <string name="time_to_drive_title">Hora de conduir!</string>
+    <string name="time_to_drive_description">Estem llestos per començar! I recorda - La  teva seguretat és la nostra precaució</string>
+    <string name="time_to_drive_action">Acabat</string>
+    <string name="used_language">CA</string>
+    <string name="tts_welcome">Gràcies per utilitzar Wakey! Que tinguis un bon viatge!</string>
+    <string name="tts_feeling_tired">Hem detectat que estàs cansat</string>
+    <string name="settings_remark">Tots els canvis s\'aplicaran després del reinici</string>
+</resources>

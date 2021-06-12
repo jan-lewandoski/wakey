@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="show_preview">Zeig die Kamera</string>
+    <string name="sensitivity_slider">Eyetracking-Empfindlichkeit</string>
+    <string name="general_next">Nächste</string>
+    <string name="general_back">Zurück</string>
+    <string name="general_done">Bereit</string>
+    <string name="general_start">Start</string>
+    <string name="general_stop">Stop</string>
+    <string name="welcome_title">Wilkommen</string>
+    <string name="welcome_description">Hallo! 👋 Mein Name Ist Foxy Und Ich Zeige Dir Wie Wakey! Funktioniert. Drücken Sie Die Taste Oder Wischen Sie Nach Links, Um Zu Beginnen!</string>
+    <string name="welcome_action">Beginnen</string>
+    <string name="about_title">Wie Funktioniert Es?</string>
+    <string name="about_description">Durch Den Einsatz Von Augen- Und Gesichtserkennung Sorge Ich Für Ihre Sicherheit. Wenn Ich Feststelle, Dass Du Einschläfst, Warne Ich Dich Mit Einem Lauten Alarm 🔊🔊</string>
+    <string name="eye_tracking_title">Augenerkennung</string>
+    <string name="eye_tracking_description">Eyetracking Arbeitet Vollständig Im Hintergrund. Je Nach Gewählter Option Kann Ich Ihnen Die Kameravorschau Entweder Anzeigen Oder Ausblenden, Um Sie Nicht Zu Unterbrechen. Klicken Sie Einfach Auf \"Start\" Und Machen Sie Sich Auf Den Weg! 🚙</string>
+    <string name="eye_tracking_low">Niedrig</string>
+    <string name="eye_tracking_medium">Mittel</string>
+    <string name="eye_tracking_high">Hoch</string>
+    <string name="permissions_title">Genehmigung</string>
+    <string name="permissions_description">Um Mein Bestes Zu Geben, Benötige Ich Ihre Erlaubnis, Die Kamera Zu Benutzen. Keine Sorge - Alles Was Ich Sehe Bleibt Auf Dem Gerät 📱</string>
+    <string name="time_to_drive_title">Zeit Zu Gehen!</string>
+    <string name="time_to_drive_description">Wir Sind Bereit Zu Gehen! Denken Sie Daran - Ihre Sicherheit Ist Unser Anliegen!</string>
+    <string name="time_to_drive_action">Abgeschlossen</string>
+    <string name="used_language">DE</string>
+    <string name="tts_welcome">Danke für die Verwendung von Wakley! Gute Reise!</string>
+    <string name="tts_feeling_tired">Wir haben festgestellt, dass du müde bist</string>
+    <string name="settings_remark">Alle Änderungen werden nach dem Neustart übernommen</string>
+</resources>

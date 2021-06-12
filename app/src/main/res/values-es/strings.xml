@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="show_preview">Mostrar cámara</string>
+    <string name="sensitivity_slider">Rastreador de ojos</string>
+    <string name="general_next">Siguiente</string>
+    <string name="general_back">Atrás</string>
+    <string name="general_done">"Terminado "</string>
+    <string name="general_start">Start</string>
+    <string name="general_stop">Stop</string>
+    <string name="welcome_title">Bienvenido</string>
+    <string name="welcome_description">Hola! 👋 Mi nombre es Foxy y te voy a enseñar como funciona Wakey. ¡Haz clic en el botón o desliza hacia la izquierda para empezar!</string>
+    <string name="welcome_action">Empezar</string>
+    <string name="about_title">¿Cómo funciona?</string>
+    <string name="about_description">Me ocuparé de tu seguridad rastreando tus ojos y tu rostro. ¡Si detecto que te estás quedando dormido te avisaré con una fuerte alarma! 🔊</string>
+    <string name="eye_tracking_title">Rastreador de ojos</string>
+    <string name="eye_tracking_description">El rastreador de ojos funciona completamente en segundo plano. Dependiendo de la opción que elijas, puedo mostrarte la vista previa de la cámara o ocultarla para no distraerte. ¡Simplemente haz clic en \"\"Start\"\" y empieza a conducir! 🚙</string>
+    <string name="eye_tracking_low">Bajo</string>
+    <string name="eye_tracking_medium">Medio</string>
+    <string name="eye_tracking_high">Alto</string>
+    <string name="permissions_title">Permisos</string>
+    <string name="permissions_description">Para poder dar lo mejor de mi, necesitaré tu permiso para poder utilizar la cámara. No te preocupes, todo lo que veo permanece en el dispositivo. 📱</string>
+    <string name="time_to_drive_title">¡Hora de conducir!</string>
+    <string name="time_to_drive_description">"¡Estamos listos para empezar! Y recuerda - Tu seguridad es nuestra preocupación "</string>
+    <string name="time_to_drive_action">"Terminado "</string>
+    <string name="used_language">ES</string>
+    <string name="tts_welcome">Gracias por utilizar Wakey! Que tengas un buen viaje!</string>
+    <string name="tts_feeling_tired">Hemos detectado que estás cansado</string>
+    <string name="settings_remark">Todos los cambios se aplicarán después del reinicio.</string>
+</resources>

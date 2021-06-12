@@ -19,6 +19,7 @@ import android.util.Range
 import android.util.Size
 import android.view.*
 import android.widget.TextView
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.eps.wakey.R
 import com.eps.wakey.activities.home.HomeActivity
@@ -51,7 +52,7 @@ class CamService: Service() {
 
     private var shouldShowPreview = true
 
-    private var isPlaying = false
+    private var isProcessing = false
     private var tts:TextToSpeech? = null
 
     private var previousPeriods: MutableList<EyeBlinkPeriod>? = null
@@ -65,12 +66,14 @@ class CamService: Service() {
     private var framesWithLeftEyeClosed = 0
     private var framesWithLeftEyeOpen = 0
 
+    private var clickOnly = true
+    private var faceVisible = false
+
 
     private var framesWithRightEyeClosed = 0
     private var framesWithRightEyeOpen = 0
 
-    private var totalFramesClosed = 0
-    private var totalFramesOpen = 0
+    private var framesDropped = 0
 
     private var sessionTime: Long = 0
 
@@ -117,9 +120,15 @@ class CamService: Service() {
 
 
     private val imageListener = ImageReader.OnImageAvailableListener { reader ->
-        val image = reader?.acquireLatestImage()
-        if (image != null) {
-            eyesOpen(image)
+        //if(reader.)
+        try{
+            val image = reader?.acquireLatestImage()
+            if (image != null) {
+                eyesOpen(image)
+            }
+        }
+        catch (e: IllegalStateException){
+            Toast.makeText(this, "Your device in not keeping up, Detection might not work", Toast.LENGTH_SHORT).show()
         }
         updateTime()
     }
@@ -240,11 +249,11 @@ class CamService: Service() {
             wm?.removeView(rootView)
         tts?.stop()
         tts?.shutdown()
+        tts = null
         mediaPlayer?.release()
         mediaPlayer = null
         sendBroadcast(Intent(ACTION_STOPPED))
     }
-
     private fun start() {
 
         shouldShowPreview = false
@@ -293,26 +302,18 @@ class CamService: Service() {
             y = 0
         }
 
-        rootView?.setOnClickListener {
-            val pendingIntent: PendingIntent =
-                Intent(this, HomeActivity::class.java).let { notificationIntent ->
-                    PendingIntent.getActivity(
-                        this, 0, notificationIntent, 0
-                    )
-                }
-            pendingIntent.send()
-        }
-
         rootView?.setOnTouchListener {
                 view, e ->
             Log.d("OVERLAY", e.toString())
 
             when (e.action) {
                 MotionEvent.ACTION_DOWN -> {
+                    clickOnly = true
                     overlayPosition = overlayParams!!.position - e.position
                     last = overlayParams!!.position - e.position
                 }
                 MotionEvent.ACTION_MOVE -> {
+                    clickOnly = false
                     overlayParams!!.position = overlayPosition!!.plus(e.position)
                     wm!!.updateViewLayout(rootView, overlayParams)
                     speedY = overlayParams!!.position.fy - last!!.fy
@@ -321,38 +322,48 @@ class CamService: Service() {
                 }
                 MotionEvent.ACTION_UP -> {
 
-                    Log.d("here", "speed: " + speedY)
+                    if(clickOnly){
+                        val pendingIntent: PendingIntent =
+                            Intent(this, HomeActivity::class.java).let { notificationIntent ->
+                                PendingIntent.getActivity(
+                                    this, 0, notificationIntent, 0
+                                )
+                            }
+                        pendingIntent.send()
+                    }
+                    else {
+                        val path = Path().apply {
+                            moveTo(overlayParams!!.position.fx, overlayParams!!.position.fy)
+                            arcTo(
+                                -overlayParams!!.position.fx,
+                                overlayParams!!.position.fy -
+                                        VELOCITY_MULTIPLIER* kotlin.math.abs(speedY),
+                                overlayParams!!.position.fx,
+                                overlayParams!!.position.fy +
+                                        VELOCITY_MULTIPLIER*kotlin.math.abs(speedY),
+                                if (speedY >= 0) 0f else 359f,
+                                if (speedY >= 0) 90f else -90f,
+                                true)
+                        }
 
-                    val path = Path().apply {
-                        moveTo(overlayParams!!.position.fx, overlayParams!!.position.fy)
-                        arcTo(
-                            -overlayParams!!.position.fx,
-                            overlayParams!!.position.fy -
-                                    VELOCITY_MULTIPLIER* kotlin.math.abs(speedY),
-                            overlayParams!!.position.fx,
-                            overlayParams!!.position.fy +
-                                    VELOCITY_MULTIPLIER*kotlin.math.abs(speedY),
-                            if (speedY >= 0) 0f else 359f,
-                            if (speedY >= 0) 90f else -90f,
-                            true)
+                        Log.d("here", "path: " + path)
+
+                        ValueAnimator.ofPropertyValuesHolder(
+                            PropertyValuesHolder.ofMultiFloat("pos",
+                                path)).apply {
+                            addUpdateListener { updated ->
+                                overlayParams!!.position = Position(
+                                    (updated.animatedValue as FloatArray)[0],
+                                    (updated.animatedValue as FloatArray)[1]
+                                )
+                                wm!!.updateViewLayout(rootView, overlayParams)
+
+                            }
+                            //interpolator = AccelerateDecelerateInterpolator()
+                            duration = 400
+                            start()
                     }
 
-                    Log.d("here", "path: " + path)
-
-                    ValueAnimator.ofPropertyValuesHolder(
-                        PropertyValuesHolder.ofMultiFloat("pos",
-                            path)).apply {
-                        addUpdateListener { updated ->
-                            overlayParams!!.position = Position(
-                                (updated.animatedValue as FloatArray)[0],
-                                (updated.animatedValue as FloatArray)[1]
-                            )
-                            wm!!.updateViewLayout(rootView, overlayParams)
-
-                        }
-                        //interpolator = AccelerateDecelerateInterpolator()
-                        duration = 400
-                        start()
                     }
                     overlayPosition = null
                 }
@@ -441,7 +452,7 @@ class CamService: Service() {
 
                 imageReader = ImageReader.newInstance(
                     previewSize!!.getWidth(), previewSize!!.getHeight(),
-                    ImageFormat.YUV_420_888, 20
+                    ImageFormat.YUV_420_888, 24
                 )
                 imageReader!!.setOnImageAvailableListener(imageListener, null)
 
@@ -509,6 +520,7 @@ class CamService: Service() {
     private fun updateTime(){
         val tv: TextView? = rootView?.findViewById(R.id.session_time_textview)
 
+
         sessionTime = System.currentTimeMillis() -  sessionInitTime
 
         val hours = (sessionTime / (1000 * 60 * 60) % 24)
@@ -516,6 +528,15 @@ class CamService: Service() {
         val seconds = (sessionTime / 1000) % 60
 
         tv?.text = String.format("%02d:%02d:%02d", hours, minutes, seconds)
+    }
+    private fun updateColor(){
+        val tv: TextView? = rootView?.findViewById(R.id.session_time_textview)
+        if(faceVisible){
+            tv?.setBackgroundColor(getColor(R.color.secondary_green))
+        }
+        else{
+            tv?.setBackgroundColor(getColor(R.color.red))
+        }
     }
     private fun incrementLeftEyeFrames(prob: Float){
         if (prob < EYE_TRACKING_SENSITIVITY){
@@ -540,7 +561,7 @@ class CamService: Service() {
         framesWithRightEyeOpen = 0
     }
     private fun eyeJustOpened(eye: Eye): Boolean{
-        if(eye.openProb > EYE_TRACKING_SENSITIVITY){
+        if(eye.openProb > EYE_TRACKING_SENSITIVITY + 0.05){
             if(eye.framesClosed >= MINIMUM_FRAMES_PER_BLINK){
                 return true
             }
@@ -576,8 +597,9 @@ class CamService: Service() {
         val rightJustOpened = eyeJustOpened(rightEye)
 
         val minFramesClosed = kotlin.math.min(framesWithLeftEyeClosed, framesWithRightEyeClosed)
+        val maxFramesClosed = kotlin.math.max(framesWithLeftEyeClosed, framesWithRightEyeClosed)
 
-        if (minFramesClosed > FRAMES_TO_TRIGGER_ALARM){
+        if (maxFramesClosed > FRAMES_TO_TRIGGER_ALARM){
 
             if ( !speaking &&  !mediaPlayer?.isPlaying!!) {
                 mediaPlayer = MediaPlayer.create(applicationContext, R.raw.warning)
@@ -592,8 +614,9 @@ class CamService: Service() {
             }
 
         }
+        var eyeJustOpened = if (leftJustOpened) leftEye else rightEye
         if (leftJustOpened || rightJustOpened){
-            previousPeriods?.add(EyeBlinkPeriod(leftEye.framesOpen, leftEye.framesClosed))
+            previousPeriods?.add(EyeBlinkPeriod(eyeJustOpened.framesOpen, eyeJustOpened.framesClosed))
                 if (previousPeriods?.size!! > PERIODS_TO_REMEMBER){
                     previousPeriods?.removeFirst()
                 }
@@ -614,34 +637,51 @@ class CamService: Service() {
         }
     }
 
-    private fun eyesOpen(bitmap: Image): Boolean {
-        val image = InputImage.fromMediaImage(bitmap, 270)
-        var out = false
-        val result = detector?.process(image)
-            ?.addOnSuccessListener { faces ->
-                for (face in faces) {
-                    var leftEyeOpenProb = 1.0f
-                    var rightEyeOpenProb = 1.0f
+    private fun eyesOpen(bitmap: Image) {
+        if(!isProcessing){
+            isProcessing = true
 
-                    if (face.leftEyeOpenProbability != null) {
-                        leftEyeOpenProb = face.leftEyeOpenProbability
-                    }
-                    if (face.rightEyeOpenProbability != null) {
-                        rightEyeOpenProb = face.rightEyeOpenProbability
+            val image = InputImage.fromMediaImage(bitmap, 270)
+            val result = detector?.process(image)
+                ?.addOnSuccessListener { faces ->
+                    faceVisible = false
+                    for (face in faces) {
+                        var leftEyeOpenProb = 1.0f
+                        var rightEyeOpenProb = 1.0f
 
+                        if (face.leftEyeOpenProbability != null) {
+                            leftEyeOpenProb = face.leftEyeOpenProbability
+                            faceVisible = true
+                        }
+                        if (face.rightEyeOpenProbability != null) {
+                            rightEyeOpenProb = face.rightEyeOpenProbability
+                            faceVisible = true
+
+                        }
+                        processProbability(leftEyeOpenProb, rightEyeOpenProb)
                     }
-                    processProbability(leftEyeOpenProb, rightEyeOpenProb)
                 }
+                ?.addOnFailureListener { e ->
+                    Log.d("log", "failed" + e)
+                }
+                ?.addOnCompleteListener {tasks ->
+                    bitmap.close()
+                    isProcessing = false
+                    updateColor()
+                }
+        }
+        else{
+            framesDropped += 1
+            if(framesDropped > FRAMES_TO_TRIGGER_ALARM){
+                Toast.makeText(this, "Your device in not keeping up, Detection might not work", Toast.LENGTH_SHORT).show()
+                framesDropped = 0
             }
-            ?.addOnFailureListener { e ->
-                Log.d("log", "failed" + e)
-            }
-            ?.addOnCompleteListener {tasks ->
-                bitmap.close()
-            }
+            bitmap.close()
+            faceVisible = false
+            updateColor()
+        }
 
 
-        return out
     }
     private fun delay(millis: Long, foo: () -> Unit){
         Handler(Looper.getMainLooper()).postDelayed({

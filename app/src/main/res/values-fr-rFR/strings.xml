@@ -9,7 +9,7 @@
     <string name="general_start">Start</string>
     <string name="general_stop">Stop</string>
     <string name="welcome_title">Bienvenue</string>
-    <string name="welcome_description">Bonjour ! 👋 \n\nMon nom est Foxy et je vais vous guider dans vos premiers pas avec Wakey!</string>
+    <string name="welcome_description">Bonjour! 👋 Mon nom est Foxy et je vais vous guider dans vos premiers pas avec Wakey!</string>
     <string name="welcome_action">Commencer</string>
     <string name="about_title">Comment ça marche ?</string>
     <string name="about_description">L\'Eye Traking analyse les mouvements de vos yeux. Si vous les fermez trop régulièrement, une alarme viendra vous réveiller ! \n\n Gardez les yeux sur la route ! 🔊</string>
@@ -24,8 +24,8 @@
     <string name="time_to_drive_description">Nous sommes prêts à partir ! \n\n N\'oubliez pas que votre sécurité est notre préoccupation !</string>
     <string name="time_to_drive_action">Terminé</string>
     <string name="used_language">FR</string>
-    <string name="tts_feeling_tired">(Curses in French)</string>
-    <string name="tts_welcome">(Cries in French)</string>
+    <string name="tts_feeling_tired">Nous avons remarqué que vous étiez fatigué</string>
+    <string name="tts_welcome">Bon voyage!</string>
 
 
 </resources>

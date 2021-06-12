@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="show_preview">Toon camera</string>
+    <string name="sensitivity_slider">Gevoeligheid van de detectie</string>
+    <string name="general_next">Volgende</string>
+    <string name="general_back">Vorige</string>
+    <string name="general_done">Klaar</string>
+    <string name="general_start">Start</string>
+    <string name="general_stop">Stop</string>
+    <string name="welcome_title">Welkom</string>
+    <string name="welcome_description">Hallo! 👋 Mijn naam is Foxy en ik ga je tonen hoe Wakey! works. Druk op de knop of swipe naar links om te starten!</string>
+    <string name="welcome_action">Beginnen</string>
+    <string name="about_title">Hoe werkt het?</string>
+    <string name="about_description">Door gebruik te maken van oog- en gezichtsdetectie zorg ik voor jouw veiligheid. Als ik detecteer dat jij in slaap valt, maak ik een luid signaal! 🔊</string>
+    <string name="eye_tracking_title">"Oogdetectie "</string>
+    <string name="eye_tracking_description">De oogdetectie werkt volledig in de achtergrond van je aparaat. Verder kan je kiezen om het beeld van je gezicht te tonen. Deze keuze bestaat om je niet af te leiden achter het stuur. Druk op \"Start\" en begin aan je rit! 🚙</string>
+    <string name="eye_tracking_low">Laag</string>
+    <string name="eye_tracking_medium">Medium</string>
+    <string name="eye_tracking_high">Hoog</string>
+    <string name="permissions_title">Toestemming</string>
+    <string name="permissions_description">Om uw veiligheid zo goed mogelijk te kunnen garanderen, hebben we uw toestemming nodig om de camara van uw toestel te gebruiken. Geen zorgen - al het beeldmateriaal blijft op het toestel 📱</string>
+    <string name="time_to_drive_title">Tijd om te vertrekken!</string>
+    <string name="time_to_drive_description">We zijn klaar om te vertrekken! Onthoud - jouw veiligheid is onze zorg!</string>
+    <string name="time_to_drive_action">Voltooid</string>
+    <string name="used_language">NL</string>
+    <string name="tts_welcome">Bedankt voor het gebruiken van Wakley! Goede reis!</string>
+    <string name="tts_feeling_tired">We detecteren dat je moe bent</string>
+    <string name="settings_remark">Alle wijzigingen worden toegepast na opnieuw opstarten</string>
+</resources>
