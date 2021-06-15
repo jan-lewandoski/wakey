@@ -19,7 +19,7 @@
     <string name="eye_tracking_medium">Moyenne</string>
     <string name="eye_tracking_high">Haute</string>
     <string name="permissions_title">Autorisations</string>
-    <string name="permissions_description">Afin de faire de mon mieux, j\\\'ai besoin que vous me donniez l\\\'autorisation d\\\'utiliser votre caméra. \n\n Pas d\'inquiétude, aucune image n\'est stockée. 📱</string>
+    <string name="permissions_description">Afin de faire de mon mieux, j\'ai besoin que vous me donniez l\'autorisation d\'utiliser votre caméra. \n\n Pas d\'inquiétude, aucune image n\'est stockée. 📱</string>
     <string name="time_to_drive_title">Il est temps de conduire !</string>
     <string name="time_to_drive_description">Nous sommes prêts à partir ! \n\n N\'oubliez pas que votre sécurité est notre préoccupation !</string>
     <string name="time_to_drive_action">Terminé</string>
