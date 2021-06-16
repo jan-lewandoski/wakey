@@ -658,6 +658,7 @@ class CamService: Service() {
             val result = detector?.process(image)
                 ?.addOnSuccessListener { faces ->
                     faceVisible = false
+                    framesDropped = 0
                     for (face in faces) {
                         var leftEyeOpenProb = 1.0f
                         var rightEyeOpenProb = 1.0f
@@ -665,13 +666,11 @@ class CamService: Service() {
                         if (face.leftEyeOpenProbability != null) {
                             leftEyeOpenProb = face.leftEyeOpenProbability
                             faceVisible = true
-                            framesDropped = 0
                         }
                         if (face.rightEyeOpenProbability != null) {
                             rightEyeOpenProb = face.rightEyeOpenProbability
                             faceVisible = true
 
-                            framesDropped = 0
 
                         }
                         processProbability(leftEyeOpenProb, rightEyeOpenProb)
