@@ -38,7 +38,7 @@
 
     <!-- Time to drive  -->
     <string name="time_to_drive_title">Time to Drive!</string>
-    <string name="time_to_drive_description">We\'re ready to go! \n\n  Remember - your safety is our concern!  </string>
+    <string name="time_to_drive_description">"We're ready to go! \nBy clicking Done,  you agree that you use this app at your own risk.\nRemember - your safety is our concern!  "</string>
     <string name="time_to_drive_fox_alt" translatable="false">Fox scooter</string>
     <string name="time_to_drive_action">Done</string>
 

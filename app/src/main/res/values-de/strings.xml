@@ -20,7 +20,7 @@
     <string name="permissions_title">Genehmigung</string>
     <string name="permissions_description">Um Mein Bestes Zu Geben, Benötige Ich Ihre Erlaubnis, Die Kamera Zu Benutzen. Keine Sorge - Alles Was Ich Sehe Bleibt Auf Dem Gerät 📱</string>
     <string name="time_to_drive_title">Zeit Zu Gehen!</string>
-    <string name="time_to_drive_description">Wir Sind Bereit Zu Gehen! Denken Sie Daran - Ihre Sicherheit Ist Unser Anliegen!</string>
+    <string name="time_to_drive_description">Wir Sind Bereit Zu Gehen!\nBy clicking Done,  you agree that you use this app at your own risk.\n Denken Sie Daran - Ihre Sicherheit Ist Unser Anliegen!</string>
     <string name="time_to_drive_action">Abgeschlossen</string>
     <string name="used_language">DE</string>
     <string name="tts_welcome">Danke für die Verwendung von Wakley! Gute Reise!</string>

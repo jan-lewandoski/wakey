@@ -20,7 +20,7 @@
     <string name="permissions_title">Permisos</string>
     <string name="permissions_description">Per poder donar el millor de mi, necessitaré el teu permís per poder utilitzar la càmera. No et preocupis, tot el que veig roman al dispositiu. 📱</string>
     <string name="time_to_drive_title">Hora de conduir!</string>
-    <string name="time_to_drive_description">Estem llestos per començar! I recorda - La  teva seguretat és la nostra precaució</string>
+    <string name="time_to_drive_description">Estem llestos per començar!\nBy clicking Done, you agree that you use this app at your own risk.\n I recorda - La  teva seguretat és la nostra precaució</string>
     <string name="time_to_drive_action">Acabat</string>
     <string name="used_language">CA</string>
     <string name="tts_welcome">Gràcies per utilitzar Wakey! Que tinguis un bon viatge!</string>
