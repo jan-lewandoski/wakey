@@ -75,6 +75,8 @@ class CamService: Service() {
 
     private var framesDropped = 0
 
+    private var colorChangeCounter = 0
+
     private var sessionTime: Long = 0
 
     private var sessionInitTime: Long = 0
@@ -123,6 +125,8 @@ class CamService: Service() {
         //if(reader.)
         try{
             val image = reader?.acquireLatestImage()
+            Log.d("timing", "time capture: " + System.currentTimeMillis())
+
             if (image != null) {
                 eyesOpen(image)
             }
@@ -464,7 +468,7 @@ class CamService: Service() {
                     CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE
                 )
                 set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH)
-                set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Range(24,24))
+                set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Range(12,12))
             }
 
             cameraDevice!!.createCaptureSession(
@@ -533,9 +537,14 @@ class CamService: Service() {
         val tv: TextView? = rootView?.findViewById(R.id.session_time_textview)
         if(faceVisible){
             tv?.setBackgroundColor(getColor(R.color.secondary_green))
+            colorChangeCounter = 0
         }
         else{
-            tv?.setBackgroundColor(getColor(R.color.red))
+            colorChangeCounter += 1
+            if(colorChangeCounter > FPS){
+                tv?.setBackgroundColor(getColor(R.color.red))
+                colorChangeCounter = 0
+            }
         }
     }
     private fun incrementLeftEyeFrames(prob: Float){
@@ -623,13 +632,17 @@ class CamService: Service() {
             blinks++
             if (longBlinksOccur()){
                 previousPeriods?.clear()
-                if (!mediaPlayer?.isPlaying!! && !speaking && System.currentTimeMillis() - lastWarningTime > MILLIS_INTERVAL_BETWEEN_ALERTS) {
+                if (!mediaPlayer?.isPlaying!!) {
                     mediaPlayer = MediaPlayer.create(applicationContext, R.raw.sound)
                     mediaPlayer?.start()
-                    delay(1500) {
-                        tts?.speak(getString(R.string.tts_feeling_tired), TextToSpeech.QUEUE_FLUSH, null, R.string.tts_feeling_tired.toString())
+                    if (!speaking && System.currentTimeMillis() - lastWarningTime > MILLIS_INTERVAL_BETWEEN_ALERTS)
+                    {
+                        delay(1500) {
+                            tts?.speak(getString(R.string.tts_feeling_tired), TextToSpeech.QUEUE_FLUSH, null, R.string.tts_feeling_tired.toString())
+                        }
+                        lastWarningTime = System.currentTimeMillis()
                     }
-                    lastWarningTime = System.currentTimeMillis()
+
                 }
             }
             resetFrameCounters()
@@ -640,7 +653,7 @@ class CamService: Service() {
     private fun eyesOpen(bitmap: Image) {
         if(!isProcessing){
             isProcessing = true
-
+            Log.d("timing", "time before: " + System.currentTimeMillis())
             val image = InputImage.fromMediaImage(bitmap, 270)
             val result = detector?.process(image)
                 ?.addOnSuccessListener { faces ->
@@ -652,10 +665,13 @@ class CamService: Service() {
                         if (face.leftEyeOpenProbability != null) {
                             leftEyeOpenProb = face.leftEyeOpenProbability
                             faceVisible = true
+                            framesDropped = 0
                         }
                         if (face.rightEyeOpenProbability != null) {
                             rightEyeOpenProb = face.rightEyeOpenProbability
                             faceVisible = true
+
+                            framesDropped = 0
 
                         }
                         processProbability(leftEyeOpenProb, rightEyeOpenProb)
@@ -666,13 +682,14 @@ class CamService: Service() {
                 }
                 ?.addOnCompleteListener {tasks ->
                     bitmap.close()
+                    Log.d("timing", "time after: " + System.currentTimeMillis())
                     isProcessing = false
                     updateColor()
                 }
         }
         else{
             framesDropped += 1
-            if(framesDropped > FRAMES_TO_TRIGGER_ALARM){
+            if(framesDropped > FPS){
                 Toast.makeText(this, "Your device in not keeping up, Detection might not work", Toast.LENGTH_SHORT).show()
                 framesDropped = 0
             }
@@ -702,12 +719,13 @@ class CamService: Service() {
 
         val VELOCITY_MULTIPLIER = 10
         var SHOW_CAMERA_PREVIEW = false
+        val FPS = 12
         var EYE_TRACKING_SENSITIVITY = 0.3F
-        var MINIMUM_FRAMES_PER_BLINK = 3
-        val BLINK_TO_SECONDS = 1f/24f
+        var MINIMUM_FRAMES_PER_BLINK = FPS/6
+        val FRAMES_TO_TRIGGER_ALARM = FPS
         val PERIODS_TO_REMEMBER = 20
-        val FRAMES_TO_TRIGGER_ALARM = 24
-        val FRAMES_TO_DETERMINE_DROWSY = 9
+        val FRAMES_TO_DETERMINE_DROWSY = FPS/2
+        val BLINK_TO_SECONDS = 1f/FPS
         val SUS_PERIODS_TO_DETERMINE_DROWSY = (PERIODS_TO_REMEMBER * 0.5).toInt()
         val MILLIS_INTERVAL_BETWEEN_ALERTS = 60000
 
