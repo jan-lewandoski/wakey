@@ -1,5 +1,5 @@
+<a href="https://play.google.com/store/apps/details?id=com.eps.wakey" target="_blank"><img src="app/src/main/res/drawable/google_play_download.png" width="250" height="100" alt="logo" /></a>
 <img src="app/src/main/res/drawable/readme_banner.png" alt="logo" />
-
 
 **About the app** <br /> <br />
 Wakey is an Android app that prevents you from falling asleep while driving. <br />
